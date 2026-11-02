@@ -1,28 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bgGradMask" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#059669" />
-      <stop offset="50%" stop-color="#047857" />
+      <stop offset="45%" stop-color="#047857" />
       <stop offset="100%" stop-color="#064e3b" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#047857" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadowMask" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.4" />
     </filter>
   </defs>
-  <!-- Background with rounded corners -->
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <!-- Full bleed maskable background for Android adaptive shapes -->
+  <rect width="512" height="512" fill="url(#bgGradMask)"/>
   
-  <!-- Outer Tasbeeh Beads Circle -->
-  <circle cx="256" cy="256" r="168" fill="none" stroke="#ffffff" stroke-width="28" stroke-dasharray="16 26" stroke-linecap="round" filter="url(#shadow)"/>
-  
-  <!-- Subtle Inner Glowing Ring -->
-  <circle cx="256" cy="256" r="110" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-width="2" stroke-opacity="0.25"/>
-  
-  <!-- Central Bead Tassel Accent -->
-  <path d="M256 424 L256 460 M246 460 L266 460" stroke="#fcd34d" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="256" cy="424" r="12" fill="#f59e0b" />
+  <!-- Subtle center glow -->
+  <circle cx="256" cy="256" r="180" fill="url(#glowGrad)"/>
 
+  <!-- Safe Zone Graphic: radius fits comfortably within 180px safe radius -->
+  <!-- Outer Tasbeeh Beads Circle -->
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#ffffff" stroke-width="22" stroke-dasharray="14 20" stroke-linecap="round" filter="url(#shadowMask)"/>
+  
+  <!-- Inner Glass Ring -->
+  <circle cx="256" cy="256" r="88" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-width="2" stroke-opacity="0.3"/>
+  
+  <!-- Gold Imam Tassel Marker at top -->
+  <circle cx="256" cy="124" r="11" fill="#fbbf24" stroke="#ffffff" stroke-width="2"/>
+  
   <!-- Central "33" Target Typography -->
-  <text x="256" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="92" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-2">33</text>
-  <text x="256" y="318" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="20" font-weight="600" fill="#a7f3d0" text-anchor="middle" letter-spacing="3">TASBEEH</text>
+  <text x="256" y="276" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="76" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-2">33</text>
+  <text x="256" y="308" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#a7f3d0" text-anchor="middle" letter-spacing="3">TASBEEH</text>
 </svg>

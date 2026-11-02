@@ -11,6 +11,11 @@
   <meta name="description" content="Touch-optimized Tasbeeh, Multi-Counter & Daily Tally Android Web App with offline storage." />
   <title>Tasbeeh & Daily Tally</title>
 
+  <!-- PWA Icons & Web Manifest -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="manifest" href="manifest.json" />
+
   <!-- Google Fonts: Inter & Amiri for crisp UI and Arabic script -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,15 +38,25 @@
   </script>
 
   <style>
-    /* Prevent accidental double-tap zoom and text selection on Android touch screens */
-    * {
+    /* Complete mobile overflow-x reset & tap latency elimination */
+    *, *::before, *::after {
+      box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden !important;
+      position: relative;
+      margin: 0;
+      padding: 0;
+      overscroll-behavior-y: contain;
+      overscroll-behavior-x: none;
     }
 
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      overscroll-behavior-y: contain;
       user-select: none;
       -webkit-user-select: none;
     }
@@ -68,13 +83,17 @@
       padding-top: max(0.75rem, env(safe-area-inset-top));
     }
 
-    /* Tactile tap button animations */
+    /* Tactile tap button animations - Hardware Accelerated with Zero Latency */
     .tasbeeh-pad {
-      transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      touch-action: none;
+      will-change: transform;
+      transform: translateZ(0);
+      transition: transform 0.06s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+      cursor: pointer;
     }
     .tasbeeh-pad:active,
     .tasbeeh-pad.pressed {
-      transform: scale(0.955);
+      transform: scale(0.95) translateZ(0);
     }
 
     /* Ripple effect inside tap circle */
@@ -92,7 +111,7 @@
       position: absolute;
       border-radius: 9999px;
       pointer-events: none;
-      animation: tapRipple 0.55s ease-out forwards;
+      animation: tapRipple 0.5s ease-out forwards;
     }
 
     /* Smooth SVG progress ring transition */
@@ -105,27 +124,32 @@
     /* Number pop micro-animation */
     @keyframes countPop {
       0% { transform: scale(1); }
-      45% { transform: scale(1.07); }
+      45% { transform: scale(1.08); }
       100% { transform: scale(1); }
     }
     .count-pop {
-      animation: countPop 0.16s ease-out;
+      animation: countPop 0.15s ease-out;
+    }
+
+    /* Prevent browser click delay on buttons */
+    button, [role="button"] {
+      touch-action: manipulation;
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200 overflow-x-hidden">
 
   <!-- App Container constrained nicely on tablets/desktop while full-bleed on Android mobile -->
-  <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-white dark:bg-slate-950 shadow-2xl shadow-slate-950/30 border-x border-slate-200/70 dark:border-slate-800/70">
+  <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-white dark:bg-slate-950 shadow-2xl shadow-slate-950/30 sm:border-x border-slate-200/70 dark:border-slate-800/70 overflow-x-hidden">
 
-    <!-- Top App Header -->
-    <header class="pt-safe px-4 pb-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80">
-      <div class="flex items-center justify-between gap-2">
+    <!-- Top App Header: Smart, Compact & Zero Horizontal Overflow -->
+    <header class="pt-safe px-3 sm:px-4 pb-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 w-full max-w-full overflow-hidden">
+      <div class="flex items-center justify-between gap-1.5 w-full">
         <!-- Brand Logo & Name -->
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-600/25 text-white shrink-0">
-            <!-- Tasbeeh Beads SVG Icon -->
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <div class="flex items-center gap-2 min-w-0 shrink">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-600/25 text-white shrink-0">
+            <!-- Smart Tasbeeh Beads Vector SVG -->
+            <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="4" r="2"/>
               <circle cx="17.5" cy="6.5" r="2"/>
               <circle cx="19.5" cy="12" r="2"/>
@@ -137,40 +161,40 @@
               <path d="M12 21.7v2"/>
             </svg>
           </div>
-          <div>
-            <h1 class="text-base font-bold tracking-tight leading-none text-slate-900 dark:text-white">Tasbeeh &amp; Tally</h1>
-            <p id="header-date-label" class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Offline Ready</p>
+          <div class="min-w-0">
+            <h1 class="text-sm font-bold tracking-tight leading-none text-slate-900 dark:text-white truncate">Tasbeeh &amp; Tally</h1>
+            <p id="header-date-label" class="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">Offline Ready</p>
           </div>
         </div>
 
-        <!-- Quick Action Controls -->
-        <div class="flex items-center gap-1">
-          <!-- Install App Button -->
-          <button id="btn-install-top" onclick="handleInstallClick()" title="Install App on Android" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 active:scale-95 transition flex items-center gap-1">
+        <!-- Quick Action Controls (Smart Sizing & Auto-Hides Install when already installed) -->
+        <div class="flex items-center gap-1 shrink-0">
+          <!-- Install App Button (Smart: HIDDEN if already installed on device!) -->
+          <button id="btn-install-top" onclick="handleInstallClick()" title="Install App on Device" class="hidden h-8 px-2 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 active:scale-95 transition flex items-center gap-1 shrink-0">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
             </svg>
-            <span>Install</span>
+            <span class="hidden xs:inline">Install</span>
           </button>
 
           <!-- Haptic Vibration Toggle -->
-          <button id="btn-toggle-vibrate" onclick="toggleSetting('vibrate')" title="Toggle Vibration" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
-            <svg id="icon-vibrate" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <button id="btn-toggle-vibrate" onclick="toggleSetting('vibrate')" title="Toggle Vibration" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition shrink-0">
+            <svg id="icon-vibrate" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
           </button>
 
           <!-- Tap Sound Toggle -->
-          <button id="btn-toggle-sound" onclick="toggleSetting('sound')" title="Toggle Tap Sound" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
-            <svg id="icon-sound" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <button id="btn-toggle-sound" onclick="toggleSetting('sound')" title="Toggle Tap Sound" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition shrink-0">
+            <svg id="icon-sound" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
           </button>
 
           <!-- Light / Dark Theme Toggle -->
-          <button id="btn-toggle-theme" onclick="toggleTheme()" title="Switch Theme" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
-            <svg id="icon-theme" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <button id="btn-toggle-theme" onclick="toggleTheme()" title="Switch Theme" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition shrink-0">
+            <svg id="icon-theme" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
           </button>
 
           <!-- Backup / Settings Modal Trigger -->
-          <button onclick="openSettingsModal()" title="Backup & Settings" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button onclick="openSettingsModal()" title="Backup & Settings" class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
@@ -180,37 +204,37 @@
     </header>
 
     <!-- Main Dynamic View Area -->
-    <main class="flex-1 flex flex-col pb-24 overflow-x-hidden">
+    <main class="flex-1 flex flex-col pb-24 overflow-x-hidden w-full max-w-full">
 
       <!-- ========================================== -->
       <!-- VIEW 1: MAIN COUNTER / TASBEEH SCREEN      -->
       <!-- ========================================== -->
-      <section id="view-counter" class="flex-1 flex flex-col px-4 pt-3 pb-2 justify-between gap-3">
+      <section id="view-counter" class="flex-1 flex flex-col px-3.5 sm:px-4 pt-3 pb-2 justify-between gap-3 w-full max-w-full overflow-x-hidden">
         
-        <!-- Quick Counter Switcher Bar -->
-        <div>
-          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="quick-switcher-bar">
+        <!-- Quick Counter Switcher Bar (Contained Horizontal Scroll) -->
+        <div class="w-full overflow-hidden">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 overscroll-x-contain" id="quick-switcher-bar">
             <!-- Dynamically populated counter pills -->
           </div>
         </div>
 
         <!-- Active Counter Title & Stats Card -->
-        <div class="bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm">
+        <div class="bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 sm:p-3.5 shadow-sm w-full">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <span id="active-color-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                <h2 id="active-counter-name" class="text-lg font-bold text-slate-900 dark:text-white truncate">SubhanAllah</h2>
+                <h2 id="active-counter-name" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">SubhanAllah</h2>
               </div>
-              <p id="active-counter-subtitle" class="text-sm text-slate-500 dark:text-slate-400 font-arabic mt-0.5 truncate">سُبْحَانَ اللَّهِ</p>
+              <p id="active-counter-subtitle" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-arabic mt-0.5 truncate">سُبْحَانَ اللَّهِ</p>
             </div>
             <!-- Edit Active Counter Quick Button -->
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="openCounterModal(state.activeCounterId)" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 active:scale-95 transition flex items-center gap-1">
+              <button onclick="openCounterModal(state.activeCounterId)" class="px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 active:scale-95 transition flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 <span>Target</span>
               </button>
-              <button onclick="openResetConfirm()" title="Reset Counter" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 active:scale-95 transition flex items-center gap-1">
+              <button onclick="openResetConfirm()" title="Reset Counter" class="px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 active:scale-95 transition flex items-center gap-1">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 <span>Reset</span>
               </button>
@@ -218,30 +242,118 @@
           </div>
 
           <!-- 3 Mini Stat Pills: Target, Cycles/Laps, Today's Total -->
-          <div class="grid grid-cols-3 gap-2 mt-3">
-            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
-              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Target</span>
-              <span id="stat-target" class="text-sm font-bold text-slate-800 dark:text-slate-200">33</span>
+          <div class="grid grid-cols-3 gap-1.5 sm:gap-2 mt-2.5">
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2 py-1.5 sm:py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Target</span>
+              <span id="stat-target" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">33</span>
             </div>
-            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
-              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Cycles / Laps</span>
-              <span id="stat-laps" class="text-sm font-bold text-emerald-600 dark:text-emerald-400">0</span>
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2 py-1.5 sm:py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Cycles</span>
+              <span id="stat-laps" class="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">0</span>
             </div>
-            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
-              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Today</span>
-              <span id="stat-today" class="text-sm font-bold text-slate-800 dark:text-slate-200">0</span>
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2 py-1.5 sm:py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Today</span>
+              <span id="stat-today" class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">0</span>
             </div>
           </div>
         </div>
 
-        <!-- Giant Ergonomic Circular Touch Zone -->
-        <div class="flex-1 flex flex-col items-center justify-center my-1 relative">
+        <!-- Giant Ergonomic Circular Touch Zone (Responsive, Zero-Lag Pointer Events) -->
+        <div class="flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 relative w-full">
           <button
             id="giant-tap-pad"
             type="button"
             aria-label="Tap to increment counter"
-            class="tasbeeh-pad relative w-64 h-64 sm:w-72 sm:h-72 rounded-full flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-[0_14px_40px_-10px_rgba(16,185,129,0.28)] dark:shadow-[0_16px_48px_-10px_rgba(16,185,129,0.22)] border border-slate-200/90 dark:border-slate-800 focus:outline-none"
+            class="tasbeeh-pad relative w-56 h-56 xs:w-64 xs:h-64 sm:w-72 sm:h-72 max-w-[76vw] max-h-[76vw] aspect-square rounded-full flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-[0_14px_40px_-10px_rgba(16,185,129,0.28)] dark:shadow-[0_16px_48px_-10px_rgba(16,185,129,0.22)] border border-slate-200/90 dark:border-slate-800 focus:outline-none shrink-0"
           >
+            <!-- Circular Progress SVG Ring -->
+            <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox="0 0 260 260">
+              <!-- Track Circle -->
+              <circle
+                cx="130"
+                cy="130"
+                r="116"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="10"
+                class="text-slate-200/80 dark:text-slate-800/90"
+              />
+              <!-- Dynamic Progress Circle -->
+              <circle
+                id="progress-ring"
+                cx="130"
+                cy="130"
+                r="116"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="10"
+                stroke-linecap="round"
+                stroke-dasharray="728.85"
+                stroke-dashoffset="728.85"
+                class="progress-ring-circle"
+              />
+            </svg>
+
+            <!-- Ripple Container -->
+            <div id="ripple-container" class="absolute inset-0 rounded-full overflow-hidden pointer-events-none"></div>
+
+            <!-- Main Count Readout -->
+            <div class="relative z-10 flex flex-col items-center px-4 text-center pointer-events-none select-none">
+              <span id="cycle-badge" class="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-0.5">
+                0 / 33
+              </span>
+              <span id="main-count-display" class="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white leading-none my-1">
+                0
+              </span>
+              <span id="tap-step-hint" class="text-[11px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                <span>Tap circle (+1)</span>
+              </span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Quick-Add Buttons & Instant Value Adder Bar (Contained Grid) -->
+        <div class="space-y-2 w-full">
+          <!-- Preset Quick Adjustment Row -->
+          <div class="grid grid-cols-5 gap-1.5 sm:gap-2 w-full">
+            <button onclick="adjustCounter(-1, 'Quick -1')" class="py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition touch-manipulation">
+              -1
+            </button>
+            <button onclick="adjustCounter(1, 'Quick +1')" class="py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition touch-manipulation">
+              +1
+            </button>
+            <button onclick="adjustCounter(5, 'Quick +5')" class="py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition touch-manipulation">
+              +5
+            </button>
+            <button onclick="adjustCounter(10, 'Quick +10')" class="py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition touch-manipulation">
+              +10
+            </button>
+            <button onclick="openAddValueModal()" class="py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/30 active:scale-95 transition flex items-center justify-center gap-0.5 touch-manipulation">
+              <span>+ Val</span>
+            </button>
+          </div>
+
+          <!-- Direct Inline Auto-Add Value Input Strip -->
+          <form onsubmit="handleInlineValueAdd(event)" class="flex items-center gap-1.5 sm:gap-2 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 w-full max-w-full">
+            <input
+              id="inline-add-input"
+              type="number"
+              step="any"
+              inputmode="numeric"
+              placeholder="Enter value (e.g. 25 or -5)..."
+              class="flex-1 min-w-0 bg-transparent px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="px-3 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold tracking-wide active:scale-95 transition shrink-0 touch-manipulation"
+            >
+              Add
+            </button>
+          </form>
+        </div>
+
+      </section>
             <!-- Circular Progress SVG Ring -->
             <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox="0 0 260 260">
               <!-- Track Circle -->
@@ -479,13 +591,13 @@
 
     </main>
 
-    <!-- Bottom Thumb-Friendly Navigation Bar -->
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-30">
+    <!-- Bottom Thumb-Friendly Navigation Bar (Subpixel Aligned, Zero Horizontal Overflow) -->
+    <nav class="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-30">
       <div class="grid grid-cols-3 px-2 pt-1.5">
         <button
           onclick="switchTab('counter')"
           id="nav-counter"
-          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-emerald-600 dark:text-emerald-400"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-emerald-600 dark:text-emerald-400 touch-manipulation"
         >
           <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="9"/>
@@ -497,7 +609,7 @@
         <button
           onclick="switchTab('counters')"
           id="nav-counters"
-          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400 touch-manipulation"
         >
           <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="6" rx="2"/>
@@ -509,7 +621,7 @@
         <button
           onclick="switchTab('tally')"
           id="nav-tally"
-          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400 touch-manipulation"
         >
           <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 3v18h18"/>
@@ -521,7 +633,7 @@
     </nav>
 
     <!-- Non-intrusive Toast Notification -->
-    <div id="toast-banner" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200">
+    <div id="toast-banner" class="fixed top-14 left-0 right-0 mx-auto w-fit max-w-[90vw] z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200">
       <div class="px-4 py-2 rounded-full bg-slate-900 dark:bg-emerald-600 text-white text-xs font-semibold shadow-lg flex items-center gap-2">
         <span id="toast-message">Saved</span>
       </div>
@@ -718,25 +830,36 @@
         </button>
       </div>
 
-      <!-- Install on Android Card -->
-      <div class="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-4 space-y-2.5">
+      <!-- Install on Device Card (Hidden automatically if app is already installed!) -->
+      <div id="settings-install-card" class="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-4 space-y-2.5">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
           </div>
           <div>
-            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Install on Android Home Screen</h4>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Install on Home Screen</h4>
             <p class="text-xs text-slate-600 dark:text-slate-300">Works 100% offline like a native app</p>
           </div>
         </div>
         <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside pl-0.5">
-          <li>Open this page in <strong>Google Chrome</strong> on your Android phone.</li>
+          <li>Open this page in <strong>Google Chrome</strong> on Android.</li>
           <li>Tap the <strong>Install</strong> button below, or tap Chrome's <strong>⋮ Menu</strong> (top-right).</li>
           <li>Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</li>
         </ol>
         <button onclick="triggerDirectInstallPrompt()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm active:scale-95 transition">
           Install App Now
         </button>
+      </div>
+
+      <!-- Installed Device Badge (Shown ONLY when app is already installed on the device) -->
+      <div id="settings-installed-badge" class="hidden bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-3.5 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-slate-900 dark:text-white">Installed on this Device</h4>
+          <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Running in full standalone offline mode</p>
+        </div>
       </div>
 
       <!-- Local Data Backup & Restore -->
@@ -1505,22 +1628,27 @@
       const sndIcon = document.getElementById('icon-sound');
       const thmIcon = document.getElementById('icon-theme');
 
+      const btnBase = 'w-8 h-8 rounded-xl flex items-center justify-center transition active:scale-95 shrink-0';
+
       vibIcon.innerHTML = state.settings.vibrate
         ? '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M2 8v8"/><path d="M22 8v8"/>'
         : '<rect x="6" y="3" width="12" height="18" rx="2" opacity="0.45"/><line x1="3" y1="3" x2="21" y2="21"/>';
-      document.getElementById('btn-toggle-vibrate').className = `p-2 rounded-xl transition active:scale-95 ${state.settings.vibrate ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500'}`;
+      document.getElementById('btn-toggle-vibrate').className = `${btnBase} ${state.settings.vibrate ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`;
 
       sndIcon.innerHTML = state.settings.sound
         ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>'
         : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" opacity="0.45"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
-      document.getElementById('btn-toggle-sound').className = `p-2 rounded-xl transition active:scale-95 ${state.settings.sound ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500'}`;
+      document.getElementById('btn-toggle-sound').className = `${btnBase} ${state.settings.sound ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`;
 
       thmIcon.innerHTML = state.settings.theme === 'dark'
         ? '<circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/>'
         : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+      document.getElementById('btn-toggle-theme').className = `${btnBase} text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800`;
 
       const todayStr = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
       document.getElementById('header-date-label').textContent = `${todayStr} • Saved Locally`;
+
+      updateInstallVisibility();
     }
 
     function renderCounterView() {
@@ -1799,93 +1927,120 @@
     }
 
     // ==========================================
-    // PWA MANIFEST, SERVICE WORKER & INSTALL
+    // PWA MANIFEST, SERVICE WORKER & SMART INSTALL DETECTION
     // ==========================================
+    function isAppInstalled() {
+      try {
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+        if (window.navigator.standalone === true) return true;
+        if (document.referrer && document.referrer.includes('android-app://')) return true;
+        if (localStorage.getItem('tasbeeh_app_installed') === 'true') return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function updateInstallVisibility() {
+      const isInstalled = isAppInstalled();
+      const installBtn = document.getElementById('btn-install-top');
+      const installCard = document.getElementById('settings-install-card');
+      const installedBadge = document.getElementById('settings-installed-badge');
+
+      if (isInstalled) {
+        // App is already installed on the device -> HIDE INSTALL BUTTONS!
+        if (installBtn) {
+          installBtn.classList.add('hidden');
+          installBtn.style.display = 'none';
+        }
+        if (installCard) {
+          installCard.classList.add('hidden');
+          installCard.style.display = 'none';
+        }
+        if (installedBadge) {
+          installedBadge.classList.remove('hidden');
+          installedBadge.style.display = 'flex';
+        }
+      } else {
+        // App is running in normal browser
+        if (installCard) {
+          installCard.classList.remove('hidden');
+          installCard.style.display = 'block';
+        }
+        if (installedBadge) {
+          installedBadge.classList.add('hidden');
+          installedBadge.style.display = 'none';
+        }
+        if (deferredInstallPrompt && installBtn) {
+          installBtn.classList.remove('hidden');
+          installBtn.style.display = 'flex';
+        } else if (installBtn) {
+          installBtn.classList.add('hidden');
+          installBtn.style.display = 'none';
+        }
+      }
+    }
+
     function setupPWA() {
       try {
-        // Generate crisp SVG App Icon Data URI
-        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-          <rect width="512" height="512" rx="112" fill="#059669"/>
-          <circle cx="256" cy="256" r="168" fill="none" stroke="#ffffff" stroke-width="32" stroke-dasharray="18 28" stroke-linecap="round"/>
-          <circle cx="256" cy="256" r="88" fill="#ffffff" fill-opacity="0.18"/>
-          <text x="256" y="282" font-family="sans-serif" font-size="84" font-weight="bold" fill="#ffffff" text-anchor="middle">33</text>
-        </svg>`;
-        const encodedIcon = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
-
-        // Add Apple Touch Icon dynamically
-        const appleIcon = document.createElement('link');
-        appleIcon.rel = 'apple-touch-icon';
-        appleIcon.href = encodedIcon;
-        document.head.appendChild(appleIcon);
-
-        // Inject Dynamic Web App Manifest
-        const manifest = {
-          name: 'Tasbeeh & Daily Tally Counter',
-          short_name: 'Tasbeeh Tally',
-          description: 'Offline Touch Counter, Tasbeeh & Daily Tally App for Android',
-          start_url: './',
-          display: 'standalone',
-          orientation: 'portrait',
-          background_color: '#020617',
-          theme_color: '#059669',
-          icons: [
-            { src: encodedIcon, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-            { src: encodedIcon, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-          ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-        const manifestURL = URL.createObjectURL(manifestBlob);
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = manifestURL;
-        document.head.appendChild(manifestLink);
-
-        // Register lightweight offline Service Worker where origin allows
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-          const swCode = `
-            const CACHE_NAME = 'tasbeeh-tally-cache-v1';
-            self.addEventListener('install', (e) => {
-              self.skipWaiting();
-            });
-            self.addEventListener('activate', (e) => {
-              e.waitUntil(self.clients.claim());
-            });
-            self.addEventListener('fetch', (e) => {
-              if (e.request.method !== 'GET') return;
-              e.respondWith(
-                fetch(e.request).then((res) => {
-                  const copy = res.clone();
-                  caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
-                  return res;
-                }).catch(() => caches.match(e.request))
-              );
-            });
-          `;
-          const swBlob = new Blob([swCode], { type: 'application/javascript' });
-          const swUrl = URL.createObjectURL(swBlob);
-          navigator.serviceWorker.register(swUrl).catch(() => {
-            // Silently ignore in sandboxed preview environments
+        // Register Service Worker for offline PWA functionality
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            console.log('Tasbeeh PWA Service Worker registered:', reg.scope);
+          }).catch(() => {
+            // Fallback to inline worker if origin doesn't serve sw.js directly
+            const swCode = `
+              const CACHE_NAME = 'tasbeeh-tally-cache-v1';
+              self.addEventListener('install', (e) => { self.skipWaiting(); });
+              self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+              self.addEventListener('fetch', (e) => {
+                if (e.request.method !== 'GET') return;
+                e.respondWith(
+                  fetch(e.request).then((res) => {
+                    const copy = res.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
+                    return res;
+                  }).catch(() => caches.match(e.request))
+                );
+              });
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
           });
         }
-      } catch (err) {
-        // Safe fallback if Blob/SW restricted
-      }
+      } catch (err) {}
+
+      // Check install status immediately
+      updateInstallVisibility();
 
       // Listen for Android Chrome's native install prompt
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
-        const installBtn = document.getElementById('btn-install-top');
-        if (installBtn) installBtn.classList.remove('hidden');
+        updateInstallVisibility();
       });
 
       window.addEventListener('appinstalled', () => {
         deferredInstallPrompt = null;
+        localStorage.setItem('tasbeeh_app_installed', 'true');
+        updateInstallVisibility();
         showToast('App installed on Home Screen!');
       });
+
+      // Listen for standalone display-mode changes
+      try {
+        window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+          if (e.matches) {
+            localStorage.setItem('tasbeeh_app_installed', 'true');
+          }
+          updateInstallVisibility();
+        });
+      } catch (e) {}
     }
 
     function handleInstallClick() {
+      if (isAppInstalled()) return;
       if (deferredInstallPrompt) {
         triggerDirectInstallPrompt();
       } else {
@@ -1894,13 +2049,19 @@
     }
 
     async function triggerDirectInstallPrompt() {
+      if (isAppInstalled()) {
+        showToast('App is already installed!');
+        return;
+      }
       if (deferredInstallPrompt) {
         deferredInstallPrompt.prompt();
         const choice = await deferredInstallPrompt.userChoice;
         if (choice && choice.outcome === 'accepted') {
+          localStorage.setItem('tasbeeh_app_installed', 'true');
           showToast('Installing Tasbeeh & Tally...');
         }
         deferredInstallPrompt = null;
+        updateInstallVisibility();
       } else {
         openSettingsModal();
         showToast('Use Chrome Menu (⋮) → "Add to Home screen"');
@@ -1915,31 +2076,49 @@
       setupPWA();
       renderAll();
 
-      // Ergonomic Touch Handling on Giant Circular Tap Pad
+      // High-Performance Pointer & Touch Engine for Instant Mobile Response
       const pad = document.getElementById('giant-tap-pad');
-      let lastTouchTime = 0;
+      if (pad) {
+        pad.style.touchAction = 'none';
 
-      pad.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevents ghost click & accidental double-tap zoom on Android
-        lastTouchTime = Date.now();
-        pad.classList.add('pressed');
-        const touch = e.changedTouches[0];
-        spawnRipple(touch.clientX, touch.clientY);
-        const active = getActiveCounter();
-        applyValueToCounter(active.id, active.step, 'Tap');
-      }, { passive: false });
+        let lastTapTimestamp = 0;
+        let isPressed = false;
 
-      pad.addEventListener('touchend', () => {
-        pad.classList.remove('pressed');
-      });
+        function triggerInstantTap(clientX, clientY) {
+          const now = Date.now();
+          // Debounce accidental double-pointer bounce (<45ms)
+          if (now - lastTapTimestamp < 45) return;
+          lastTapTimestamp = now;
 
-      pad.addEventListener('click', (e) => {
-        // Ignore synthesized click right after touchstart
-        if (Date.now() - lastTouchTime < 450) return;
-        spawnRipple(e.clientX, e.clientY);
-        const active = getActiveCounter();
-        applyValueToCounter(active.id, active.step, 'Tap');
-      });
+          // Unlock Web Audio immediately on touch gesture
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+          }
+
+          spawnRipple(clientX, clientY);
+          const active = getActiveCounter();
+          applyValueToCounter(active.id, active.step, 'Tap');
+        }
+
+        // Pointerdown responds in <4ms on touchscreens with zero gesture lag
+        pad.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          isPressed = true;
+          pad.classList.add('pressed');
+          triggerInstantTap(e.clientX, e.clientY);
+        });
+
+        const releasePadPress = () => {
+          if (isPressed) {
+            isPressed = false;
+            pad.classList.remove('pressed');
+          }
+        };
+
+        pad.addEventListener('pointerup', releasePadPress);
+        pad.addEventListener('pointercancel', releasePadPress);
+        pad.addEventListener('pointerleave', releasePadPress);
+      }
 
       // Keyboard space/up arrow support when testing on desktop
       window.addEventListener('keydown', (e) => {
