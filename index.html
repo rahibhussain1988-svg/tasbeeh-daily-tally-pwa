@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#064e3b" id="meta-theme-color" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tasbeeh Tally" />
+  <meta name="description" content="Touch-optimized Tasbeeh, Multi-Counter & Daily Tally Android Web App with offline storage." />
+  <title>Tasbeeh & Daily Tally</title>
+
+  <!-- PWA Icons & Web Manifest -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Google Fonts: Inter & Amiri for crisp UI and Arabic script -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            arabic: ['Amiri', 'serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Prevent accidental double-tap zoom and text selection on Android touch screens */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overscroll-behavior-y: contain;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input, textarea, select {
+      user-select: auto;
+      -webkit-user-select: auto;
+    }
+
+    /* Hide scrollbars cleanly for horizontal pill bars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Safe area padding for notched/gesture Android devices */
+    .pb-safe {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .pt-safe {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+
+    /* Tactile tap button animations */
+    .tasbeeh-pad {
+      transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+    .tasbeeh-pad:active,
+    .tasbeeh-pad.pressed {
+      transform: scale(0.955);
+    }
+
+    /* Ripple effect inside tap circle */
+    @keyframes tapRipple {
+      0% {
+        transform: scale(0.2);
+        opacity: 0.45;
+      }
+      100% {
+        transform: scale(2.3);
+        opacity: 0;
+      }
+    }
+    .ripple-circle {
+      position: absolute;
+      border-radius: 9999px;
+      pointer-events: none;
+      animation: tapRipple 0.55s ease-out forwards;
+    }
+
+    /* Smooth SVG progress ring transition */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Number pop micro-animation */
+    @keyframes countPop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.07); }
+      100% { transform: scale(1); }
+    }
+    .count-pop {
+      animation: countPop 0.16s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+
+  <!-- App Container constrained nicely on tablets/desktop while full-bleed on Android mobile -->
+  <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-white dark:bg-slate-950 shadow-2xl shadow-slate-950/30 border-x border-slate-200/70 dark:border-slate-800/70">
+
+    <!-- Top App Header -->
+    <header class="pt-safe px-4 pb-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80">
+      <div class="flex items-center justify-between gap-2">
+        <!-- Brand Logo & Name -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-600/25 text-white shrink-0">
+            <!-- Tasbeeh Beads SVG Icon -->
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="4" r="2"/>
+              <circle cx="17.5" cy="6.5" r="2"/>
+              <circle cx="19.5" cy="12" r="2"/>
+              <circle cx="17" cy="17.5" r="2"/>
+              <circle cx="12" cy="19.5" r="2.2"/>
+              <circle cx="7" cy="17.5" r="2"/>
+              <circle cx="4.5" cy="12" r="2"/>
+              <circle cx="6.5" cy="6.5" r="2"/>
+              <path d="M12 21.7v2"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-tight leading-none text-slate-900 dark:text-white">Tasbeeh &amp; Tally</h1>
+            <p id="header-date-label" class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Offline Ready</p>
+          </div>
+        </div>
+
+        <!-- Quick Action Controls -->
+        <div class="flex items-center gap-1">
+          <!-- Install App Button -->
+          <button id="btn-install-top" onclick="handleInstallClick()" title="Install App on Android" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 active:scale-95 transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+            </svg>
+            <span>Install</span>
+          </button>
+
+          <!-- Haptic Vibration Toggle -->
+          <button id="btn-toggle-vibrate" onclick="toggleSetting('vibrate')" title="Toggle Vibration" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
+            <svg id="icon-vibrate" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          </button>
+
+          <!-- Tap Sound Toggle -->
+          <button id="btn-toggle-sound" onclick="toggleSetting('sound')" title="Toggle Tap Sound" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
+            <svg id="icon-sound" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          </button>
+
+          <!-- Light / Dark Theme Toggle -->
+          <button id="btn-toggle-theme" onclick="toggleTheme()" title="Switch Theme" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
+            <svg id="icon-theme" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+          </button>
+
+          <!-- Backup / Settings Modal Trigger -->
+          <button onclick="openSettingsModal()" title="Backup & Settings" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Dynamic View Area -->
+    <main class="flex-1 flex flex-col pb-24 overflow-x-hidden">
+
+      <!-- ========================================== -->
+      <!-- VIEW 1: MAIN COUNTER / TASBEEH SCREEN      -->
+      <!-- ========================================== -->
+      <section id="view-counter" class="flex-1 flex flex-col px-4 pt-3 pb-2 justify-between gap-3">
+        
+        <!-- Quick Counter Switcher Bar -->
+        <div>
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="quick-switcher-bar">
+            <!-- Dynamically populated counter pills -->
+          </div>
+        </div>
+
+        <!-- Active Counter Title & Stats Card -->
+        <div class="bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span id="active-color-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <h2 id="active-counter-name" class="text-lg font-bold text-slate-900 dark:text-white truncate">SubhanAllah</h2>
+              </div>
+              <p id="active-counter-subtitle" class="text-sm text-slate-500 dark:text-slate-400 font-arabic mt-0.5 truncate">سُبْحَانَ اللَّهِ</p>
+            </div>
+            <!-- Edit Active Counter Quick Button -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="openCounterModal(state.activeCounterId)" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 active:scale-95 transition flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <span>Target</span>
+              </button>
+              <button onclick="openResetConfirm()" title="Reset Counter" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 active:scale-95 transition flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 Mini Stat Pills: Target, Cycles/Laps, Today's Total -->
+          <div class="grid grid-cols-3 gap-2 mt-3">
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Target</span>
+              <span id="stat-target" class="text-sm font-bold text-slate-800 dark:text-slate-200">33</span>
+            </div>
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Cycles / Laps</span>
+              <span id="stat-laps" class="text-sm font-bold text-emerald-600 dark:text-emerald-400">0</span>
+            </div>
+            <div class="bg-white dark:bg-slate-950/70 rounded-xl px-2.5 py-2 border border-slate-200/60 dark:border-slate-800/80 text-center">
+              <span class="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">Today</span>
+              <span id="stat-today" class="text-sm font-bold text-slate-800 dark:text-slate-200">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Giant Ergonomic Circular Touch Zone -->
+        <div class="flex-1 flex flex-col items-center justify-center my-1 relative">
+          <button
+            id="giant-tap-pad"
+            type="button"
+            aria-label="Tap to increment counter"
+            class="tasbeeh-pad relative w-64 h-64 sm:w-72 sm:h-72 rounded-full flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-[0_14px_40px_-10px_rgba(16,185,129,0.28)] dark:shadow-[0_16px_48px_-10px_rgba(16,185,129,0.22)] border border-slate-200/90 dark:border-slate-800 focus:outline-none"
+          >
+            <!-- Circular Progress SVG Ring -->
+            <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox="0 0 260 260">
+              <!-- Track Circle -->
+              <circle
+                cx="130"
+                cy="130"
+                r="116"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="10"
+                class="text-slate-200/80 dark:text-slate-800/90"
+              />
+              <!-- Dynamic Progress Circle -->
+              <circle
+                id="progress-ring"
+                cx="130"
+                cy="130"
+                r="116"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="10"
+                stroke-linecap="round"
+                stroke-dasharray="728.85"
+                stroke-dashoffset="728.85"
+                class="progress-ring-circle"
+              />
+            </svg>
+
+            <!-- Ripple Container -->
+            <div id="ripple-container" class="absolute inset-0 rounded-full overflow-hidden pointer-events-none"></div>
+
+            <!-- Main Count Readout -->
+            <div class="relative z-10 flex flex-col items-center px-6 text-center pointer-events-none">
+              <span id="cycle-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-1">
+                0 / 33
+              </span>
+              <span id="main-count-display" class="text-6xl sm:text-7xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white leading-none my-1">
+                0
+              </span>
+              <span id="tap-step-hint" class="text-xs font-medium text-slate-400 dark:text-slate-500 mt-2 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 13V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5v-2a1.5 1.5 0 0 1 3 0V12"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2 .208a6 6 0 0 1-5.012-2.7L7 19c-.312-.479-1.407-2.388-3.286-5.728a1.5 1.5 0 0 1 .536-2.022 1.867 1.867 0 0 1 2.28.28L8 13"/></svg>
+                Tap anywhere (+1)
+              </span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Quick-Add Buttons & Instant Value Adder Bar -->
+        <div class="space-y-2.5">
+          <!-- Preset Quick Adjustment Row -->
+          <div class="grid grid-cols-5 gap-2">
+            <button onclick="adjustCounter(-1, 'Quick -1')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
+              -1
+            </button>
+            <button onclick="adjustCounter(1, 'Quick +1')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
+              +1
+            </button>
+            <button onclick="adjustCounter(5, 'Quick +5')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
+              +5
+            </button>
+            <button onclick="adjustCounter(10, 'Quick +10')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
+              +10
+            </button>
+            <button onclick="openAddValueModal()" class="py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/30 active:scale-95 transition flex items-center justify-center gap-0.5">
+              <span>+ Value</span>
+            </button>
+          </div>
+
+          <!-- Direct Inline Auto-Add Value Input Strip -->
+          <form onsubmit="handleInlineValueAdd(event)" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <input
+              id="inline-add-input"
+              type="number"
+              step="any"
+              inputmode="numeric"
+              placeholder="Enter value to add (e.g. 25 or -5)..."
+              class="flex-1 min-w-0 bg-transparent px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold tracking-wide active:scale-95 transition shrink-0"
+            >
+              Add Now
+            </button>
+          </form>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: MY COUNTERS MANAGEMENT SCREEN      -->
+      <!-- ========================================== -->
+      <section id="view-counters" class="hidden flex-1 flex-col px-4 pt-4 pb-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">My Counters</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Tap any counter to make it active, or create new ones</p>
+          </div>
+          <button
+            onclick="openCounterModal(null)"
+            class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>New Counter</span>
+          </button>
+        </div>
+
+        <!-- Summary Banner -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-3.5 text-white shadow-md">
+            <span class="text-[11px] uppercase tracking-wider font-semibold text-emerald-100">Active Counters</span>
+            <p id="summary-total-counters" class="text-2xl font-extrabold mt-0.5">5</p>
+          </div>
+          <div class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5">
+            <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">All-Time Combined</span>
+            <p id="summary-alltime-sum" class="text-2xl font-extrabold text-slate-900 dark:text-white mt-0.5">0</p>
+          </div>
+        </div>
+
+        <!-- Counters List -->
+        <div id="counters-list-container" class="space-y-2.5">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: DAILY TALLY & ACTIVITY SCREEN      -->
+      <!-- ========================================== -->
+      <section id="view-tally" class="hidden flex-1 flex-col px-4 pt-4 pb-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Daily Tally Screen</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Add numbers directly — totals update automatically</p>
+          </div>
+          <span id="tally-today-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+            Today
+          </span>
+        </div>
+
+        <!-- Instant Daily Tally Calculator / Adder Card -->
+        <div class="bg-slate-100/90 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <label for="tally-counter-select" class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Counter</label>
+            <span id="tally-selected-current" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current: 0</span>
+          </div>
+
+          <select
+            id="tally-counter-select"
+            onchange="updateTallySelectedReadout()"
+            class="w-full rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          ></select>
+
+          <form onsubmit="handleTallyScreenSubmit(event)" class="space-y-2.5">
+            <div class="flex gap-2">
+              <input
+                id="tally-value-input"
+                type="number"
+                step="any"
+                inputmode="numeric"
+                required
+                placeholder="Enter value (e.g. 50, 120, -10)"
+                class="flex-1 min-w-0 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-3 text-base font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="submit"
+                class="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md shadow-emerald-600/25 active:scale-95 transition shrink-0"
+              >
+                + Add
+              </button>
+            </div>
+            <input
+              id="tally-note-input"
+              type="text"
+              maxlength="60"
+              placeholder="Optional note (e.g. Morning session, Cash batch #2)"
+              class="w-full rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+          </form>
+
+          <!-- Instant 1-Tap Tally Chips -->
+          <div class="pt-1">
+            <span class="block text-[11px] font-medium text-slate-400 dark:text-slate-500 mb-1.5">1-Tap Instant Add:</span>
+            <div class="grid grid-cols-5 gap-1.5">
+              <button type="button" onclick="quickTallyAdd(1)" class="py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 active:scale-95 transition">+1</button>
+              <button type="button" onclick="quickTallyAdd(5)" class="py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 active:scale-95 transition">+5</button>
+              <button type="button" onclick="quickTallyAdd(10)" class="py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 active:scale-95 transition">+10</button>
+              <button type="button" onclick="quickTallyAdd(50)" class="py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 active:scale-95 transition">+50</button>
+              <button type="button" onclick="quickTallyAdd(100)" class="py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 active:scale-95 transition">+100</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Combined & Date Breakdown -->
+        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-4 text-white shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Selected Day Total</span>
+              <p id="tally-day-grand-total" class="text-3xl font-extrabold tabular-nums mt-0.5">0</p>
+            </div>
+            <!-- Date Filter Picker -->
+            <div>
+              <select
+                id="tally-date-select"
+                onchange="renderTallyView()"
+                class="rounded-xl bg-white/15 backdrop-blur-sm border border-white/25 px-3 py-1.5 text-xs font-semibold text-white focus:outline-none"
+              ></select>
+            </div>
+          </div>
+          <!-- Per-counter breakdown for selected date -->
+          <div id="tally-day-breakdown" class="mt-3 pt-3 border-t border-white/15 space-y-1.5 text-xs">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Recent Timestamped Activity Log -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Additions &amp; Activity</h3>
+            <div class="flex items-center gap-2">
+              <button onclick="undoLastLog()" id="btn-undo-log" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-40">
+                Undo Last
+              </button>
+              <span class="text-slate-300 dark:text-slate-700">|</span>
+              <button onclick="openClearHistoryConfirm()" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+                Clear Log
+              </button>
+            </div>
+          </div>
+
+          <div id="activity-log-container" class="space-y-2">
+            <!-- Dynamically populated logs -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Thumb-Friendly Navigation Bar -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-30">
+      <div class="grid grid-cols-3 px-2 pt-1.5">
+        <button
+          onclick="switchTab('counter')"
+          id="nav-counter"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-emerald-600 dark:text-emerald-400"
+        >
+          <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+          <span class="text-[11px] font-bold">Counter</span>
+        </button>
+
+        <button
+          onclick="switchTab('counters')"
+          id="nav-counters"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400"
+        >
+          <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="6" rx="2"/>
+            <rect x="3" y="14" width="18" height="6" rx="2"/>
+          </svg>
+          <span class="text-[11px] font-bold">My Counters</span>
+        </button>
+
+        <button
+          onclick="switchTab('tally')"
+          id="nav-tally"
+          class="flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400"
+        >
+          <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+          <span class="text-[11px] font-bold">Daily Tally</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Non-intrusive Toast Notification -->
+    <div id="toast-banner" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200">
+      <div class="px-4 py-2 rounded-full bg-slate-900 dark:bg-emerald-600 text-white text-xs font-semibold shadow-lg flex items-center gap-2">
+        <span id="toast-message">Saved</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================================================= -->
+  <!-- MODAL 1: CREATE / EDIT COUNTER                    -->
+  <!-- ================================================= -->
+  <div id="modal-counter" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 border-t sm:border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-counter-title" class="text-lg font-bold text-slate-900 dark:text-white">New Counter</h3>
+        <button onclick="closeModal('modal-counter')" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="saveCounterForm(event)" class="space-y-3.5">
+        <input type="hidden" id="form-counter-id" />
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Counter / Tasbeeh Name *</label>
+          <input
+            id="form-counter-name"
+            type="text"
+            required
+            maxlength="40"
+            placeholder="e.g. SubhanAllah, Daily Water, Shop Sales"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Subtitle / Dhikr Text / Note (Optional)</label>
+          <input
+            id="form-counter-subtitle"
+            type="text"
+            maxlength="60"
+            placeholder="e.g. سُبْحَانَ اللَّهِ or Glory be to Allah"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Target Goal (0 = Unlimited)</label>
+            <input
+              id="form-counter-target"
+              type="number"
+              min="0"
+              step="1"
+              value="33"
+              class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tap Increment Step</label>
+            <input
+              id="form-counter-step"
+              type="number"
+              min="1"
+              step="any"
+              value="1"
+              class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <!-- Target Quick Presets -->
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" onclick="setTargetPreset(33)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">33</button>
+          <button type="button" onclick="setTargetPreset(99)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">99</button>
+          <button type="button" onclick="setTargetPreset(100)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">100</button>
+          <button type="button" onclick="setTargetPreset(500)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">500</button>
+          <button type="button" onclick="setTargetPreset(1000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">1000</button>
+          <button type="button" onclick="setTargetPreset(0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Unlimited</button>
+        </div>
+
+        <!-- Accent Color Picker -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Accent Color</label>
+          <div id="color-picker-row" class="flex items-center gap-2.5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-counter')" class="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25">
+            Save Counter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- MODAL 2: CUSTOM "+ ADD VALUE" MODAL               -->
+  <!-- ================================================= -->
+  <div id="modal-add-value" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 border-t sm:border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Add Custom Value</h3>
+          <p id="modal-add-subtitle" class="text-xs text-slate-500 dark:text-slate-400">Automatically adds &amp; updates total</p>
+        </div>
+        <button onclick="closeModal('modal-add-value')" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="submitModalValueAdd(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Value to Add (use - for subtraction)</label>
+          <input
+            id="modal-value-input"
+            type="number"
+            step="any"
+            inputmode="numeric"
+            required
+            placeholder="e.g. 33, 100, -15"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-3 text-xl font-extrabold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-4 gap-2">
+          <button type="button" onclick="quickModalDelta(25)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800">+25</button>
+          <button type="button" onclick="quickModalDelta(33)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800">+33</button>
+          <button type="button" onclick="quickModalDelta(100)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800">+100</button>
+          <button type="button" onclick="quickModalDelta(500)" class="py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800">+500</button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Optional Note</label>
+          <input
+            id="modal-value-note"
+            type="text"
+            maxlength="60"
+            placeholder="e.g. After Fajr, Batch count"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="button" onclick="closeModal('modal-add-value')" class="flex-1 py-3 rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25">
+            Update Total
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- MODAL 3: CUSTOM CONFIRMATION DIALOG (NO alert())  -->
+  <!-- ================================================= -->
+  <div id="modal-confirm" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+    <div class="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </div>
+        <div>
+          <h3 id="confirm-title" class="text-base font-bold text-slate-900 dark:text-white">Reset Counter?</h3>
+          <p id="confirm-message" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Are you sure you want to reset this counter to 0?</p>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeModal('modal-confirm')" class="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+          Cancel
+        </button>
+        <button id="confirm-action-btn" class="flex-1 py-2.5 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/25">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- MODAL 4: SETTINGS, BACKUP & ANDROID PWA INSTALL   -->
+  <!-- ================================================= -->
+  <div id="modal-settings" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-5 border-t sm:border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">App Settings &amp; Backup</h3>
+        <button onclick="closeModal('modal-settings')" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Install on Android Card -->
+      <div class="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Install on Android Home Screen</h4>
+            <p class="text-xs text-slate-600 dark:text-slate-300">Works 100% offline like a native app</p>
+          </div>
+        </div>
+        <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside pl-0.5">
+          <li>Open this page in <strong>Google Chrome</strong> on your Android phone.</li>
+          <li>Tap the <strong>Install</strong> button below, or tap Chrome's <strong>⋮ Menu</strong> (top-right).</li>
+          <li>Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.</li>
+        </ol>
+        <button onclick="triggerDirectInstallPrompt()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm active:scale-95 transition">
+          Install App Now
+        </button>
+      </div>
+
+      <!-- Local Data Backup & Restore -->
+      <div class="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+        <div>
+          <h4 class="text-sm font-bold text-slate-900 dark:text-white">Local Storage Backup (JSON)</h4>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">All counters &amp; daily tallies save automatically on this device. Export a backup anytime.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="exportBackupJSON()" class="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:border-emerald-500 active:scale-95 transition flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Backup</span>
+          </button>
+
+          <label class="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:border-emerald-500 active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <svg class="w-4 h-4 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Import JSON</span>
+            <input type="file" accept=".json,application/json" onchange="importBackupJSON(event)" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <button onclick="closeModal('modal-settings')" class="w-full py-3 rounded-xl font-semibold text-sm bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- APPLICATION LOGIC, AUDIO, PWA & LOCAL PERSISTENCE -->
+  <!-- ================================================= -->
+  <script>
+    const STORAGE_KEY = 'tasbeeh_daily_tally_pwa_v1';
+    const RING_CIRCUMFERENCE = 2 * Math.PI * 116; // r = 116 -> ~728.85
+
+    // Accent palette definitions for counters
+    const ACCENT_COLORS = {
+      emerald: { name: 'Emerald', hex: '#10b981', pillBg: 'bg-emerald-500', softBg: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400' },
+      teal:    { name: 'Teal',    hex: '#14b8a6', pillBg: 'bg-teal-500',    softBg: 'bg-teal-500/15',    text: 'text-teal-600 dark:text-teal-400' },
+      sky:     { name: 'Sky',     hex: '#0ea5e9', pillBg: 'bg-sky-500',     softBg: 'bg-sky-500/15',     text: 'text-sky-600 dark:text-sky-400' },
+      violet:  { name: 'Violet',  hex: '#8b5cf6', pillBg: 'bg-violet-500',  softBg: 'bg-violet-500/15',  text: 'text-violet-600 dark:text-violet-400' },
+      amber:   { name: 'Amber',   hex: '#f59e0b', pillBg: 'bg-amber-500',   softBg: 'bg-amber-500/15',   text: 'text-amber-600 dark:text-amber-400' },
+      rose:    { name: 'Rose',    hex: '#f43f5e', pillBg: 'bg-rose-500',    softBg: 'bg-rose-500/15',    text: 'text-rose-600 dark:text-rose-400' }
+    };
+
+    // Starter counters loaded if localStorage is empty
+    function getStarterState() {
+      const now = Date.now();
+      return {
+        activeTab: 'counter',
+        activeCounterId: 'c_subhanallah',
+        settings: {
+          theme: 'dark',
+          vibrate: true,
+          sound: true
+        },
+        counters: [
+          {
+            id: 'c_subhanallah',
+            name: 'SubhanAllah',
+            subtitle: 'سُبْحَانَ اللَّهِ • Glory be to Allah',
+            count: 0,
+            target: 33,
+            step: 1,
+            color: 'emerald',
+            createdAt: now
+          },
+          {
+            id: 'c_alhamdulillah',
+            name: 'Alhamdulillah',
+            subtitle: 'الْحَمْدُ لِلَّهِ • Praise be to Allah',
+            count: 0,
+            target: 33,
+            step: 1,
+            color: 'teal',
+            createdAt: now + 1
+          },
+          {
+            id: 'c_allahuakbar',
+            name: 'Allahu Akbar',
+            subtitle: 'اللَّهُ أَكْبَرُ • Allah is the Greatest',
+            count: 0,
+            target: 34,
+            step: 1,
+            color: 'sky',
+            createdAt: now + 2
+          },
+          {
+            id: 'c_astaghfirullah',
+            name: 'Astaghfirullah',
+            subtitle: 'أَسْتَغْفِرُ اللَّهَ • Seeking Forgiveness',
+            count: 0,
+            target: 100,
+            step: 1,
+            color: 'amber',
+            createdAt: now + 3
+          },
+          {
+            id: 'c_dailytally',
+            name: 'Daily Tally',
+            subtitle: 'General items, sales & quick additions',
+            count: 0,
+            target: 0,
+            step: 1,
+            color: 'violet',
+            createdAt: now + 4
+          }
+        ],
+        // Daily totals indexed by YYYY-MM-DD -> { counterId: numericTotal }
+        dailyTotals: {},
+        // Recent timestamped entries: { id, counterId, counterName, delta, newTotal, note, dateKey, timestamp }
+        logs: []
+      };
+    }
+
+    let state = loadState();
+    let selectedModalColor = 'emerald';
+    let audioCtx = null;
+    let deferredInstallPrompt = null;
+    let toastTimer = null;
+
+    // Helper: Get local YYYY-MM-DD key
+    function getLocalDateKey(dateObj = new Date()) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // Format friendly date label
+    function formatFriendlyDate(dateKey) {
+      const todayKey = getLocalDateKey();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayKey = getLocalDateKey(yesterday);
+
+      if (dateKey === todayKey) return `Today (${dateKey})`;
+      if (dateKey === yesterdayKey) return `Yesterday (${dateKey})`;
+      return dateKey;
+    }
+
+    // Format numbers cleanly (integers or decimals)
+    function formatNum(n) {
+      if (typeof n !== 'number' || isNaN(n)) return '0';
+      return Number.isInteger(n) ? n.toLocaleString() : parseFloat(n.toFixed(2)).toLocaleString();
+    }
+
+    // Load & validate state from localStorage
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return getStarterState();
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.counters) || parsed.counters.length === 0) {
+          return getStarterState();
+        }
+        return {
+          ...getStarterState(),
+          ...parsed,
+          settings: { ...getStarterState().settings, ...(parsed.settings || {}) },
+          dailyTotals: parsed.dailyTotals || {},
+          logs: Array.isArray(parsed.logs) ? parsed.logs : []
+        };
+      } catch (err) {
+        console.warn('Could not read localStorage, falling back to starter state:', err);
+        return getStarterState();
+      }
+    }
+
+    // Save state immediately to localStorage
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.warn('Failed to persist state to localStorage:', err);
+      }
+    }
+
+    // Get currently selected counter safely
+    function getActiveCounter() {
+      let found = state.counters.find(c => c.id === state.activeCounterId);
+      if (!found) {
+        found = state.counters[0];
+        state.activeCounterId = found.id;
+      }
+      return found;
+    }
+
+    // Synthesize subtle click or completion chime via Web Audio API
+    function playTapSound(isTargetReached = false) {
+      if (!state.settings.sound) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+
+        if (isTargetReached) {
+          // Pleasant two-note harmonic chime on target completion
+          [523.25, 659.25].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+            gain.gain.setValueAtTime(0.14, now + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.28);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.09);
+            osc.stop(now + idx * 0.09 + 0.29);
+          });
+        } else {
+          // Soft wooden bead tap click
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(310, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.035);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        }
+      } catch (e) {
+        // Ignore audio errors on restricted devices
+      }
+    }
+
+    // Trigger Android haptic vibration
+    function triggerHaptic(isTargetReached = false) {
+      if (!state.settings.vibrate || typeof navigator.vibrate !== 'function') return;
+      try {
+        if (isTargetReached) {
+          navigator.vibrate([45, 45, 85]);
+        } else {
+          navigator.vibrate(18);
+        }
+      } catch (e) {
+        // Ignore on unsupported browsers
+      }
+    }
+
+    // Core Increment / Value Adjustment Engine (updates counter, daily tally & logs)
+    function applyValueToCounter(counterId, delta, note = '') {
+      const numericDelta = Number(delta);
+      if (isNaN(numericDelta) || numericDelta === 0) return;
+
+      const counter = state.counters.find(c => c.id === counterId);
+      if (!counter) return;
+
+      const prevCount = counter.count;
+      // Round floating precision cleanly
+      const updatedCount = Math.round((prevCount + numericDelta) * 10000) / 10000;
+      counter.count = updatedCount;
+
+      // Check if a positive target cycle boundary was reached
+      let hitTarget = false;
+      if (counter.target > 0 && numericDelta > 0) {
+        const prevCycles = Math.floor(Math.max(0, prevCount) / counter.target);
+        const newCycles = Math.floor(Math.max(0, updatedCount) / counter.target);
+        if (newCycles > prevCycles && updatedCount > 0) {
+          hitTarget = true;
+        }
+      }
+
+      // Update Today's Daily Tally automatically
+      const todayKey = getLocalDateKey();
+      if (!state.dailyTotals[todayKey]) {
+        state.dailyTotals[todayKey] = {};
+      }
+      const prevTodayVal = state.dailyTotals[todayKey][counter.id] || 0;
+      state.dailyTotals[todayKey][counter.id] = Math.round((prevTodayVal + numericDelta) * 10000) / 10000;
+
+      // Record timestamped activity log (keep latest 150 entries for fast mobile performance)
+      state.logs.unshift({
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        counterId: counter.id,
+        counterName: counter.name,
+        delta: numericDelta,
+        newTotal: updatedCount,
+        note: note || (numericDelta === counter.step ? 'Tap' : 'Added value'),
+        dateKey: todayKey,
+        timestamp: Date.now()
+      });
+      if (state.logs.length > 150) {
+        state.logs.length = 150;
+      }
+
+      saveState();
+      triggerHaptic(hitTarget);
+      playTapSound(hitTarget);
+
+      if (hitTarget) {
+        const laps = Math.floor(updatedCount / counter.target);
+        showToast(`Target ${counter.target} reached! (Cycle ${laps})`);
+      }
+
+      renderAll();
+      animateCountPop();
+    }
+
+    // Adjust currently active counter
+    function adjustCounter(delta, note = '') {
+      const active = getActiveCounter();
+      applyValueToCounter(active.id, delta, note);
+    }
+
+    // Pop animation on main number
+    function animateCountPop() {
+      const el = document.getElementById('main-count-display');
+      if (!el) return;
+      el.classList.remove('count-pop');
+      void el.offsetWidth;
+      el.classList.add('count-pop');
+    }
+
+    // Create visual touch ripple inside the circular pad
+    function spawnRipple(clientX, clientY) {
+      const pad = document.getElementById('giant-tap-pad');
+      const container = document.getElementById('ripple-container');
+      if (!pad || !container) return;
+
+      const rect = pad.getBoundingClientRect();
+      const size = 110;
+      const x = (clientX ? clientX - rect.left : rect.width / 2) - size / 2;
+      const y = (clientY ? clientY - rect.top : rect.height / 2) - size / 2;
+
+      const active = getActiveCounter();
+      const accent = ACCENT_COLORS[active.color] || ACCENT_COLORS.emerald;
+
+      const ripple = document.createElement('span');
+      ripple.className = 'ripple-circle';
+      ripple.style.width = `${size}px`;
+      ripple.style.height = `${size}px`;
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.style.backgroundColor = accent.hex;
+
+      container.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 580);
+    }
+
+    // Inline "+ Add Value" form on Main Counter view
+    function handleInlineValueAdd(e) {
+      e.preventDefault();
+      const input = document.getElementById('inline-add-input');
+      const val = parseFloat(input.value);
+      if (isNaN(val) || val === 0) {
+        showToast('Enter a non-zero number');
+        return;
+      }
+      const active = getActiveCounter();
+      applyValueToCounter(active.id, val, 'Direct value add');
+      input.value = '';
+      input.blur();
+      showToast(`${val > 0 ? '+' : ''}${formatNum(val)} added to ${active.name}`);
+    }
+
+    // Daily Tally Screen form submission
+    function handleTallyScreenSubmit(e) {
+      e.preventDefault();
+      const selectEl = document.getElementById('tally-counter-select');
+      const valInput = document.getElementById('tally-value-input');
+      const noteInput = document.getElementById('tally-note-input');
+
+      const counterId = selectEl.value;
+      const val = parseFloat(valInput.value);
+      if (isNaN(val) || val === 0) {
+        showToast('Enter a valid non-zero value');
+        return;
+      }
+
+      const note = noteInput.value.trim() || 'Daily Tally entry';
+      applyValueToCounter(counterId, val, note);
+
+      valInput.value = '';
+      noteInput.value = '';
+      showToast(`Updated! (${val > 0 ? '+' : ''}${formatNum(val)})`);
+    }
+
+    // 1-Tap Instant Tally buttons on Daily Tally Screen
+    function quickTallyAdd(amount) {
+      const selectEl = document.getElementById('tally-counter-select');
+      const noteInput = document.getElementById('tally-note-input');
+      const counterId = selectEl.value || state.activeCounterId;
+      const note = noteInput.value.trim() || `Quick +${amount}`;
+      applyValueToCounter(counterId, amount, note);
+      showToast(`+${amount} added`);
+    }
+
+    // Undo most recent activity log item
+    function undoLastLog() {
+      if (state.logs.length === 0) return;
+      const latest = state.logs.shift();
+      const counter = state.counters.find(c => c.id === latest.counterId);
+      if (counter) {
+        counter.count = Math.round((counter.count - latest.delta) * 10000) / 10000;
+      }
+      if (state.dailyTotals[latest.dateKey] && typeof state.dailyTotals[latest.dateKey][latest.counterId] === 'number') {
+        state.dailyTotals[latest.dateKey][latest.counterId] = Math.round(
+          (state.dailyTotals[latest.dateKey][latest.counterId] - latest.delta) * 10000
+        ) / 10000;
+      }
+      saveState();
+      triggerHaptic(false);
+      renderAll();
+      showToast(`Undid ${latest.delta > 0 ? '+' : ''}${formatNum(latest.delta)} on ${latest.counterName}`);
+    }
+
+    // Modal "+ Value" handlers
+    function openAddValueModal() {
+      const active = getActiveCounter();
+      document.getElementById('modal-add-subtitle').textContent = `Adding to "${active.name}" (Current: ${formatNum(active.count)})`;
+      document.getElementById('modal-value-input').value = '';
+      document.getElementById('modal-value-note').value = '';
+      openModal('modal-add-value');
+      setTimeout(() => document.getElementById('modal-value-input').focus(), 80);
+    }
+
+    function quickModalDelta(val) {
+      const input = document.getElementById('modal-value-input');
+      const curr = parseFloat(input.value) || 0;
+      input.value = curr + val;
+    }
+
+    function submitModalValueAdd(e) {
+      e.preventDefault();
+      const val = parseFloat(document.getElementById('modal-value-input').value);
+      const note = document.getElementById('modal-value-note').value.trim() || 'Custom value';
+      if (isNaN(val) || val === 0) {
+        showToast('Please enter a non-zero number');
+        return;
+      }
+      const active = getActiveCounter();
+      applyValueToCounter(active.id, val, note);
+      closeModal('modal-add-value');
+      showToast(`${val > 0 ? '+' : ''}${formatNum(val)} added to ${active.name}`);
+    }
+
+    // Reset Confirmation Modal
+    function openResetConfirm() {
+      const active = getActiveCounter();
+      showConfirmModal(
+        `Reset "${active.name}"?`,
+        `Current count (${formatNum(active.count)}) will be reset to 0. Your daily tally history stays safe.`,
+        'Reset to 0',
+        () => {
+          active.count = 0;
+          state.logs.unshift({
+            id: 'log_' + Date.now(),
+            counterId: active.id,
+            counterName: active.name,
+            delta: 0,
+            newTotal: 0,
+            note: 'Counter reset to 0',
+            dateKey: getLocalDateKey(),
+            timestamp: Date.now()
+          });
+          saveState();
+          triggerHaptic(false);
+          renderAll();
+          showToast(`${active.name} reset to 0`);
+        }
+      );
+    }
+
+    // Clear Activity Log Confirmation
+    function openClearHistoryConfirm() {
+      showConfirmModal(
+        'Clear Activity Log?',
+        'This clears the recent timestamped log list while keeping all your counters intact.',
+        'Clear Log',
+        () => {
+          state.logs = [];
+          saveState();
+          renderAll();
+          showToast('Activity log cleared');
+        }
+      );
+    }
+
+    // Reusable Custom Confirm Dialog
+    function showConfirmModal(title, message, btnText, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      const btn = document.getElementById('confirm-action-btn');
+      btn.textContent = btnText;
+      btn.onclick = () => {
+        closeModal('modal-confirm');
+        onConfirm();
+      };
+      openModal('modal-confirm');
+    }
+
+    // Create / Edit Counter Modal
+    function openCounterModal(counterId = null) {
+      const idInput = document.getElementById('form-counter-id');
+      const nameInput = document.getElementById('form-counter-name');
+      const subInput = document.getElementById('form-counter-subtitle');
+      const targetInput = document.getElementById('form-counter-target');
+      const stepInput = document.getElementById('form-counter-step');
+      const titleEl = document.getElementById('modal-counter-title');
+
+      if (counterId) {
+        const existing = state.counters.find(c => c.id === counterId);
+        if (!existing) return;
+        titleEl.textContent = 'Edit Counter';
+        idInput.value = existing.id;
+        nameInput.value = existing.name;
+        subInput.value = existing.subtitle || '';
+        targetInput.value = existing.target || 0;
+        stepInput.value = existing.step || 1;
+        selectedModalColor = existing.color || 'emerald';
+      } else {
+        titleEl.textContent = 'Create New Counter';
+        idInput.value = '';
+        nameInput.value = '';
+        subInput.value = '';
+        targetInput.value = 33;
+        stepInput.value = 1;
+        selectedModalColor = 'emerald';
+      }
+
+      renderColorPicker();
+      openModal('modal-counter');
+    }
+
+    function setTargetPreset(val) {
+      document.getElementById('form-counter-target').value = val;
+    }
+
+    function renderColorPicker() {
+      const container = document.getElementById('color-picker-row');
+      container.innerHTML = Object.entries(ACCENT_COLORS).map(([key, cfg]) => {
+        const isSelected = key === selectedModalColor;
+        return `
+          <button
+            type="button"
+            onclick="selectModalColor('${key}')"
+            class="w-9 h-9 rounded-full flex items-center justify-center transition ${isSelected ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-white dark:ring-offset-slate-900 scale-110' : 'opacity-75 hover:opacity-100'}"
+            style="background-color: ${cfg.hex}"
+            aria-label="${cfg.name}"
+          >
+            ${isSelected ? '<svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectModalColor(colorKey) {
+      selectedModalColor = colorKey;
+      renderColorPicker();
+    }
+
+    function saveCounterForm(e) {
+      e.preventDefault();
+      const id = document.getElementById('form-counter-id').value;
+      const name = document.getElementById('form-counter-name').value.trim();
+      const subtitle = document.getElementById('form-counter-subtitle').value.trim();
+      const target = Math.max(0, parseInt(document.getElementById('form-counter-target').value, 10) || 0);
+      const step = parseFloat(document.getElementById('form-counter-step').value) || 1;
+
+      if (!name) return;
+
+      if (id) {
+        const counter = state.counters.find(c => c.id === id);
+        if (counter) {
+          counter.name = name;
+          counter.subtitle = subtitle;
+          counter.target = target;
+          counter.step = step;
+          counter.color = selectedModalColor;
+        }
+        showToast('Counter updated');
+      } else {
+        const newId = 'c_' + Date.now();
+        state.counters.push({
+          id: newId,
+          name,
+          subtitle,
+          count: 0,
+          target,
+          step,
+          color: selectedModalColor,
+          createdAt: Date.now()
+        });
+        state.activeCounterId = newId;
+        showToast(`Created "${name}"`);
+      }
+
+      saveState();
+      closeModal('modal-counter');
+      renderAll();
+    }
+
+    // Select a counter & jump to Counter screen
+    function selectCounter(counterId, switchToCounterTab = false) {
+      state.activeCounterId = counterId;
+      if (switchToCounterTab) {
+        state.activeTab = 'counter';
+      }
+      saveState();
+      triggerHaptic(false);
+      renderAll();
+    }
+
+    // Delete a counter with confirmation
+    function confirmDeleteCounter(counterId, event) {
+      if (event) event.stopPropagation();
+      if (state.counters.length <= 1) {
+        showToast('Keep at least one counter');
+        return;
+      }
+      const target = state.counters.find(c => c.id === counterId);
+      if (!target) return;
+
+      showConfirmModal(
+        `Delete "${target.name}"?`,
+        'This removes the counter permanently from your list.',
+        'Delete',
+        () => {
+          state.counters = state.counters.filter(c => c.id !== counterId);
+          if (state.activeCounterId === counterId) {
+            state.activeCounterId = state.counters[0].id;
+          }
+          saveState();
+          renderAll();
+          showToast(`Deleted "${target.name}"`);
+        }
+      );
+    }
+
+    // Switch Bottom Tabs
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      saveState();
+      renderAll();
+    }
+
+    // Theme & Settings Toggles
+    function applyTheme() {
+      const htmlEl = document.documentElement;
+      const metaTheme = document.getElementById('meta-theme-color');
+      if (state.settings.theme === 'dark') {
+        htmlEl.classList.add('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#020617');
+      } else {
+        htmlEl.classList.remove('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#ffffff');
+      }
+    }
+
+    function toggleTheme() {
+      state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+      saveState();
+      renderHeaderIcons();
+    }
+
+    function toggleSetting(key) {
+      state.settings[key] = !state.settings[key];
+      saveState();
+      renderHeaderIcons();
+      if (key === 'vibrate' && state.settings.vibrate) triggerHaptic(false);
+      if (key === 'sound' && state.settings.sound) playTapSound(false);
+      showToast(`${key === 'vibrate' ? 'Vibration' : 'Tap Sound'} ${state.settings[key] ? 'ON' : 'OFF'}`);
+    }
+
+    // Modal Open / Close Utilities
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    function openSettingsModal() {
+      openModal('modal-settings');
+    }
+
+    // Toast notification helper
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      const text = document.getElementById('toast-message');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('opacity-0', '-translate-y-2');
+      banner.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.remove('opacity-100', 'translate-y-0');
+        banner.classList.add('opacity-0', '-translate-y-2');
+      }, 2100);
+    }
+
+    // Export & Import JSON Backup
+    function exportBackupJSON() {
+      try {
+        const payload = JSON.stringify(state, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tasbeeh-tally-backup-${getLocalDateKey()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Backup JSON downloaded');
+      } catch (err) {
+        showToast('Could not export backup');
+      }
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!imported || !Array.isArray(imported.counters) || imported.counters.length === 0) {
+            showToast('Invalid backup file format');
+            return;
+          }
+          state = {
+            ...getStarterState(),
+            ...imported,
+            settings: { ...getStarterState().settings, ...(imported.settings || {}) }
+          };
+          applyTheme();
+          saveState();
+          renderAll();
+          closeModal('modal-settings');
+          showToast('Backup restored!');
+        } catch (err) {
+          showToast('Failed to parse JSON file');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // ==========================================
+    // RENDER FUNCTIONS
+    // ==========================================
+    function renderHeaderIcons() {
+      const vibIcon = document.getElementById('icon-vibrate');
+      const sndIcon = document.getElementById('icon-sound');
+      const thmIcon = document.getElementById('icon-theme');
+
+      vibIcon.innerHTML = state.settings.vibrate
+        ? '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M2 8v8"/><path d="M22 8v8"/>'
+        : '<rect x="6" y="3" width="12" height="18" rx="2" opacity="0.45"/><line x1="3" y1="3" x2="21" y2="21"/>';
+      document.getElementById('btn-toggle-vibrate').className = `p-2 rounded-xl transition active:scale-95 ${state.settings.vibrate ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500'}`;
+
+      sndIcon.innerHTML = state.settings.sound
+        ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>'
+        : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" opacity="0.45"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+      document.getElementById('btn-toggle-sound').className = `p-2 rounded-xl transition active:scale-95 ${state.settings.sound ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-400 dark:text-slate-500'}`;
+
+      thmIcon.innerHTML = state.settings.theme === 'dark'
+        ? '<circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/>'
+        : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+      const todayStr = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      document.getElementById('header-date-label').textContent = `${todayStr} • Saved Locally`;
+    }
+
+    function renderCounterView() {
+      const active = getActiveCounter();
+      const accent = ACCENT_COLORS[active.color] || ACCENT_COLORS.emerald;
+      const todayKey = getLocalDateKey();
+      const todayVal = (state.dailyTotals[todayKey] && state.dailyTotals[todayKey][active.id]) || 0;
+
+      // Render Quick Switcher Pills
+      const bar = document.getElementById('quick-switcher-bar');
+      bar.innerHTML = state.counters.map(c => {
+        const isAct = c.id === active.id;
+        const cAccent = ACCENT_COLORS[c.color] || ACCENT_COLORS.emerald;
+        return `
+          <button
+            onclick="selectCounter('${c.id}', false)"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 border ${
+              isAct
+                ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-950 dark:border-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 border-slate-200/80 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
+            }"
+          >
+            <span class="w-2 h-2 rounded-full" style="background-color:${cAccent.hex}"></span>
+            <span>${escapeHtml(c.name)}</span>
+            <span class="opacity-70 tabular-nums">(${formatNum(c.count)})</span>
+          </button>
+        `;
+      }).join('') + `
+        <button
+          onclick="openCounterModal(null)"
+          class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0"
+        >
+          + New
+        </button>
+      `;
+
+      // Active details
+      document.getElementById('active-color-dot').style.backgroundColor = accent.hex;
+      document.getElementById('active-counter-name').textContent = active.name;
+      const subEl = document.getElementById('active-counter-subtitle');
+      subEl.textContent = active.subtitle || 'Tap circle below to count';
+
+      // Stats
+      document.getElementById('stat-target').textContent = active.target > 0 ? formatNum(active.target) : '∞';
+      const laps = active.target > 0 ? Math.floor(Math.max(0, active.count) / active.target) : 0;
+      document.getElementById('stat-laps').textContent = active.target > 0 ? formatNum(laps) : '—';
+      document.getElementById('stat-today').textContent = (todayVal > 0 ? '+' : '') + formatNum(todayVal);
+
+      // Main count & step label
+      document.getElementById('main-count-display').textContent = formatNum(active.count);
+      document.getElementById('tap-step-hint').innerHTML = `
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+        <span>Tap circle (${active.step >= 0 ? '+' : ''}${formatNum(active.step)})</span>
+      `;
+
+      // Progress Ring & Cycle Badge
+      const ring = document.getElementById('progress-ring');
+      const badge = document.getElementById('cycle-badge');
+      ring.style.stroke = accent.hex;
+
+      if (active.target > 0) {
+        const positiveCount = Math.max(0, active.count);
+        const rem = positiveCount % active.target;
+        const inCycle = (rem === 0 && positiveCount > 0) ? active.target : rem;
+        const pct = Math.min(1, inCycle / active.target);
+        const offset = RING_CIRCUMFERENCE * (1 - pct);
+        ring.style.strokeDashoffset = offset;
+        badge.textContent = `${formatNum(inCycle)} / ${formatNum(active.target)}`;
+      } else {
+        // Decorative subtle progress per 100 steps when unlimited
+        const mod100 = ((active.count % 100) + 100) % 100;
+        const offset = RING_CIRCUMFERENCE * (1 - mod100 / 100);
+        ring.style.strokeDashoffset = active.count === 0 ? RING_CIRCUMFERENCE : offset;
+        badge.textContent = 'Unlimited Tally';
+      }
+    }
+
+    function renderCountersListView() {
+      document.getElementById('summary-total-counters').textContent = state.counters.length;
+      const totalAll = state.counters.reduce((acc, c) => acc + (Number(c.count) || 0), 0);
+      document.getElementById('summary-alltime-sum').textContent = formatNum(totalAll);
+
+      const todayKey = getLocalDateKey();
+      const container = document.getElementById('counters-list-container');
+
+      container.innerHTML = state.counters.map(c => {
+        const isAct = c.id === state.activeCounterId;
+        const accent = ACCENT_COLORS[c.color] || ACCENT_COLORS.emerald;
+        const todayCount = (state.dailyTotals[todayKey] && state.dailyTotals[todayKey][c.id]) || 0;
+        const pct = c.target > 0 ? Math.min(100, Math.round(((Math.max(0, c.count) % c.target) || (c.count > 0 ? c.target : 0)) / c.target * 100)) : null;
+
+        return `
+          <div
+            onclick="selectCounter('${c.id}', true)"
+            class="cursor-pointer rounded-2xl p-4 border transition active:scale-[0.99] ${
+              isAct
+                ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/50 shadow-xs'
+                : 'bg-slate-100/70 dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+            }"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full shrink-0" style="background-color:${accent.hex}"></span>
+                  <h3 class="font-bold text-base text-slate-900 dark:text-white truncate">${escapeHtml(c.name)}</h3>
+                  ${isAct ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white">ACTIVE</span>' : ''}
+                </div>
+                ${c.subtitle ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${escapeHtml(c.subtitle)}</p>` : ''}
+                <div class="flex flex-wrap items-center gap-3 mt-2.5 text-xs text-slate-500 dark:text-slate-400">
+                  <span>Target: <strong class="text-slate-700 dark:text-slate-200">${c.target > 0 ? formatNum(c.target) : '∞'}</strong></span>
+                  <span>Step: <strong class="text-slate-700 dark:text-slate-200">+${formatNum(c.step)}</strong></span>
+                  <span>Today: <strong class="text-emerald-600 dark:text-emerald-400">${todayCount >= 0 ? '+' : ''}${formatNum(todayCount)}</strong></span>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0 flex flex-col items-end justify-between">
+                <span class="text-2xl font-extrabold tabular-nums text-slate-900 dark:text-white">${formatNum(c.count)}</span>
+                <div class="flex items-center gap-1 mt-2" onclick="event.stopPropagation()">
+                  <button
+                    onclick="openCounterModal('${c.id}')"
+                    class="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-500"
+                    title="Edit Counter"
+                  >
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </button>
+                  <button
+                    onclick="confirmDeleteCounter('${c.id}', event)"
+                    class="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-rose-500 hover:bg-rose-500/10"
+                    title="Delete Counter"
+                  >
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            ${pct !== null ? `
+              <div class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-3">
+                <div class="h-full rounded-full transition-all duration-300" style="width:${pct}%; background-color:${accent.hex}"></div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateTallySelectedReadout() {
+      const sel = document.getElementById('tally-counter-select');
+      const target = state.counters.find(c => c.id === sel.value) || getActiveCounter();
+      document.getElementById('tally-selected-current').textContent = `Current Total: ${formatNum(target.count)}`;
+    }
+
+    function renderTallyView() {
+      const selectEl = document.getElementById('tally-counter-select');
+      const prevSelectedCounter = selectEl.value || state.activeCounterId;
+
+      selectEl.innerHTML = state.counters.map(c => `
+        <option value="${c.id}" ${c.id === prevSelectedCounter ? 'selected' : ''}>
+          ${escapeHtml(c.name)} (Total: ${formatNum(c.count)})
+        </option>
+      `).join('');
+      updateTallySelectedReadout();
+
+      // Build Date Options (always include Today + any historical dates)
+      const todayKey = getLocalDateKey();
+      const dateSelect = document.getElementById('tally-date-select');
+      const prevDate = dateSelect.value || todayKey;
+      const allDatesSet = new Set([todayKey, ...Object.keys(state.dailyTotals)]);
+      const sortedDates = Array.from(allDatesSet).sort((a, b) => b.localeCompare(a));
+
+      dateSelect.innerHTML = sortedDates.map(dk => `
+        <option value="${dk}" ${dk === prevDate ? 'selected' : ''} class="text-slate-900">
+          ${formatFriendlyDate(dk)}
+        </option>
+      `).join('');
+
+      const activeDateKey = dateSelect.value || todayKey;
+      const dayMap = state.dailyTotals[activeDateKey] || {};
+
+      // Compute Grand Total for selected date
+      const grandTotal = Object.values(dayMap).reduce((sum, val) => sum + (Number(val) || 0), 0);
+      document.getElementById('tally-day-grand-total').textContent = (grandTotal > 0 ? '+' : '') + formatNum(grandTotal);
+
+      // Breakdown per counter
+      const breakdownEl = document.getElementById('tally-day-breakdown');
+      const entries = Object.entries(dayMap).filter(([, v]) => v !== 0);
+
+      if (entries.length === 0) {
+        breakdownEl.innerHTML = `<p class="text-emerald-100/80 italic">No tally entries recorded on this date yet.</p>`;
+      } else {
+        breakdownEl.innerHTML = entries.map(([cid, val]) => {
+          const counterObj = state.counters.find(c => c.id === cid);
+          const label = counterObj ? counterObj.name : 'Deleted Counter';
+          return `
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-emerald-50 truncate pr-2">${escapeHtml(label)}</span>
+              <span class="font-bold tabular-nums">${val > 0 ? '+' : ''}${formatNum(val)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Recent Activity Logs
+      const undoBtn = document.getElementById('btn-undo-log');
+      undoBtn.disabled = state.logs.length === 0;
+
+      const logContainer = document.getElementById('activity-log-container');
+      if (state.logs.length === 0) {
+        logContainer.innerHTML = `
+          <div class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+            Tap the counter or add a value above — timestamped updates appear here automatically.
+          </div>
+        `;
+      } else {
+        logContainer.innerHTML = state.logs.slice(0, 40).map(item => {
+          const timeStr = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const isPositive = item.delta > 0;
+          const isZero = item.delta === 0;
+          const badgeClass = isZero
+            ? 'bg-slate-500/15 text-slate-500'
+            : isPositive
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+
+          return `
+            <div class="flex items-center justify-between gap-2 bg-slate-100/70 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl px-3.5 py-2.5">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-xs text-slate-900 dark:text-white truncate">${escapeHtml(item.counterName)}</span>
+                  <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">${timeStr}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${escapeHtml(item.note || '')} • New Total: <strong>${formatNum(item.newTotal)}</strong></p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold tabular-nums shrink-0 ${badgeClass}">
+                ${isZero ? 'RESET' : (isPositive ? '+' : '') + formatNum(item.delta)}
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderNavigation() {
+      const tabs = ['counter', 'counters', 'tally'];
+      tabs.forEach(t => {
+        const viewEl = document.getElementById(`view-${t}`);
+        const navBtn = document.getElementById(`nav-${t}`);
+        if (state.activeTab === t) {
+          viewEl.classList.remove('hidden');
+          viewEl.classList.add('flex');
+          navBtn.className = 'flex flex-col items-center justify-center py-2 rounded-2xl transition text-emerald-600 dark:text-emerald-400 bg-emerald-500/10';
+        } else {
+          viewEl.classList.add('hidden');
+          viewEl.classList.remove('flex');
+          navBtn.className = 'flex flex-col items-center justify-center py-2 rounded-2xl transition text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+        }
+      });
+    }
+
+    function renderAll() {
+      renderHeaderIcons();
+      renderNavigation();
+      renderCounterView();
+      renderCountersListView();
+      renderTallyView();
+    }
+
+    // Safe HTML Escape
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ==========================================
+    // PWA MANIFEST, SERVICE WORKER & INSTALL
+    // ==========================================
+    function setupPWA() {
+      try {
+        // Generate crisp SVG App Icon Data URI
+        const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <rect width="512" height="512" rx="112" fill="#059669"/>
+          <circle cx="256" cy="256" r="168" fill="none" stroke="#ffffff" stroke-width="32" stroke-dasharray="18 28" stroke-linecap="round"/>
+          <circle cx="256" cy="256" r="88" fill="#ffffff" fill-opacity="0.18"/>
+          <text x="256" y="282" font-family="sans-serif" font-size="84" font-weight="bold" fill="#ffffff" text-anchor="middle">33</text>
+        </svg>`;
+        const encodedIcon = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+        // Add Apple Touch Icon dynamically
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = encodedIcon;
+        document.head.appendChild(appleIcon);
+
+        // Inject Dynamic Web App Manifest
+        const manifest = {
+          name: 'Tasbeeh & Daily Tally Counter',
+          short_name: 'Tasbeeh Tally',
+          description: 'Offline Touch Counter, Tasbeeh & Daily Tally App for Android',
+          start_url: './',
+          display: 'standalone',
+          orientation: 'portrait',
+          background_color: '#020617',
+          theme_color: '#059669',
+          icons: [
+            { src: encodedIcon, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+            { src: encodedIcon, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+
+        // Register Service Worker for offline PWA functionality
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            console.log('Tasbeeh PWA Service Worker registered:', reg.scope);
+          }).catch(() => {
+            // Fallback to inline worker if origin doesn't serve sw.js directly
+            const swCode = `
+              const CACHE_NAME = 'tasbeeh-tally-cache-v1';
+              self.addEventListener('install', (e) => { self.skipWaiting(); });
+              self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+              self.addEventListener('fetch', (e) => {
+                if (e.request.method !== 'GET') return;
+                e.respondWith(
+                  fetch(e.request).then((res) => {
+                    const copy = res.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
+                    return res;
+                  }).catch(() => caches.match(e.request))
+                );
+              });
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+          });
+        }
+      } catch (err) {
+        // Safe fallback if Blob/SW restricted
+      }
+
+      // Listen for Android Chrome's native install prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        const installBtn = document.getElementById('btn-install-top');
+        if (installBtn) installBtn.classList.remove('hidden');
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        showToast('App installed on Home Screen!');
+      });
+    }
+
+    function handleInstallClick() {
+      if (deferredInstallPrompt) {
+        triggerDirectInstallPrompt();
+      } else {
+        openSettingsModal();
+      }
+    }
+
+    async function triggerDirectInstallPrompt() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          showToast('Installing Tasbeeh & Tally...');
+        }
+        deferredInstallPrompt = null;
+      } else {
+        openSettingsModal();
+        showToast('Use Chrome Menu (⋮) → "Add to Home screen"');
+      }
+    }
+
+    // ==========================================
+    // INITIALIZE TOUCH LISTENERS & APP STARTUP
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme();
+      setupPWA();
+      renderAll();
+
+      // Ergonomic Touch Handling on Giant Circular Tap Pad
+      const pad = document.getElementById('giant-tap-pad');
+      let lastTouchTime = 0;
+
+      pad.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevents ghost click & accidental double-tap zoom on Android
+        lastTouchTime = Date.now();
+        pad.classList.add('pressed');
+        const touch = e.changedTouches[0];
+        spawnRipple(touch.clientX, touch.clientY);
+        const active = getActiveCounter();
+        applyValueToCounter(active.id, active.step, 'Tap');
+      }, { passive: false });
+
+      pad.addEventListener('touchend', () => {
+        pad.classList.remove('pressed');
+      });
+
+      pad.addEventListener('click', (e) => {
+        // Ignore synthesized click right after touchstart
+        if (Date.now() - lastTouchTime < 450) return;
+        spawnRipple(e.clientX, e.clientY);
+        const active = getActiveCounter();
+        applyValueToCounter(active.id, active.step, 'Tap');
+      });
+
+      // Keyboard space/up arrow support when testing on desktop
+      window.addEventListener('keydown', (e) => {
+        if (state.activeTab !== 'counter') return;
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+        if (e.code === 'Space' || e.code === 'ArrowUp') {
+          e.preventDefault();
+          spawnRipple();
+          const active = getActiveCounter();
+          applyValueToCounter(active.id, active.step, 'Tap');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
