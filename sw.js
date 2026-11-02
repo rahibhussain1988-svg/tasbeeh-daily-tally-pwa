@@ -1,7 +1,7 @@
 // Tasbeeh & Daily Tally Counter Service Worker
-// Version 2.0.0 - Network-First for HTML, Cache-First for Assets, 100% Offline Support
+// Version 3.0.0 - Network-First for HTML, Cache-First for Assets, 100% Offline Support
 
-const CACHE_NAME = 'tasbeeh-tally-v2';
+const CACHE_NAME = 'tasbeeh-tally-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',

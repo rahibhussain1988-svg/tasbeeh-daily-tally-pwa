@@ -117,8 +117,6 @@
     /* Smooth SVG progress ring transition */
     .progress-ring-circle {
       transition: stroke-dashoffset 0.22s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
     }
 
     /* Number pop micro-animation */
@@ -259,15 +257,16 @@
         </div>
 
         <!-- Giant Ergonomic Circular Touch Zone (Responsive, Zero-Lag Pointer Events) -->
-        <div class="flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 relative w-full">
+        <!-- Giant Ergonomic Circular Touch Zone (Responsive, Zero-Lag Pointer Events) -->
+        <div id="tap-zone-container" class="flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 relative w-full">
           <button
             id="giant-tap-pad"
             type="button"
             aria-label="Tap to increment counter"
-            class="tasbeeh-pad relative w-56 h-56 xs:w-64 xs:h-64 sm:w-72 sm:h-72 max-w-[76vw] max-h-[76vw] aspect-square rounded-full flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-[0_14px_40px_-10px_rgba(16,185,129,0.28)] dark:shadow-[0_16px_48px_-10px_rgba(16,185,129,0.22)] border border-slate-200/90 dark:border-slate-800 focus:outline-none shrink-0"
+            class="tasbeeh-pad relative w-56 h-56 xs:w-60 xs:h-60 sm:w-64 sm:h-64 max-w-[68vw] max-h-[68vw] max-h-[35vh] max-h-[35dvh] aspect-square rounded-full flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-[0_14px_40px_-10px_rgba(16,185,129,0.28)] dark:shadow-[0_16px_48px_-10px_rgba(16,185,129,0.22)] border border-slate-200/90 dark:border-slate-800 focus:outline-none shrink-0"
           >
-            <!-- Circular Progress SVG Ring -->
-            <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox="0 0 260 260">
+            <!-- Circular Progress SVG Ring (Hardware-Accelerated Container Rotation) -->
+            <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none -rotate-90" style="transform: rotate(-90deg); transform-origin: center;" viewBox="0 0 260 260">
               <!-- Track Circle -->
               <circle
                 cx="130"
@@ -349,94 +348,6 @@
               class="px-3 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold tracking-wide active:scale-95 transition shrink-0 touch-manipulation"
             >
               Add
-            </button>
-          </form>
-        </div>
-
-      </section>
-            <!-- Circular Progress SVG Ring -->
-            <svg class="absolute inset-0 w-full h-full p-2 pointer-events-none" viewBox="0 0 260 260">
-              <!-- Track Circle -->
-              <circle
-                cx="130"
-                cy="130"
-                r="116"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="10"
-                class="text-slate-200/80 dark:text-slate-800/90"
-              />
-              <!-- Dynamic Progress Circle -->
-              <circle
-                id="progress-ring"
-                cx="130"
-                cy="130"
-                r="116"
-                fill="none"
-                stroke="#10b981"
-                stroke-width="10"
-                stroke-linecap="round"
-                stroke-dasharray="728.85"
-                stroke-dashoffset="728.85"
-                class="progress-ring-circle"
-              />
-            </svg>
-
-            <!-- Ripple Container -->
-            <div id="ripple-container" class="absolute inset-0 rounded-full overflow-hidden pointer-events-none"></div>
-
-            <!-- Main Count Readout -->
-            <div class="relative z-10 flex flex-col items-center px-6 text-center pointer-events-none">
-              <span id="cycle-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-1">
-                0 / 33
-              </span>
-              <span id="main-count-display" class="text-6xl sm:text-7xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white leading-none my-1">
-                0
-              </span>
-              <span id="tap-step-hint" class="text-xs font-medium text-slate-400 dark:text-slate-500 mt-2 flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 13V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5v-2a1.5 1.5 0 0 1 3 0V12"/><path d="M14 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2 .208a6 6 0 0 1-5.012-2.7L7 19c-.312-.479-1.407-2.388-3.286-5.728a1.5 1.5 0 0 1 .536-2.022 1.867 1.867 0 0 1 2.28.28L8 13"/></svg>
-                Tap anywhere (+1)
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <!-- Quick-Add Buttons & Instant Value Adder Bar -->
-        <div class="space-y-2.5">
-          <!-- Preset Quick Adjustment Row -->
-          <div class="grid grid-cols-5 gap-2">
-            <button onclick="adjustCounter(-1, 'Quick -1')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
-              -1
-            </button>
-            <button onclick="adjustCounter(1, 'Quick +1')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
-              +1
-            </button>
-            <button onclick="adjustCounter(5, 'Quick +5')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
-              +5
-            </button>
-            <button onclick="adjustCounter(10, 'Quick +10')" class="py-2.5 rounded-xl font-bold text-sm bg-slate-200/80 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-slate-300/70 dark:hover:bg-slate-700 active:scale-95 transition">
-              +10
-            </button>
-            <button onclick="openAddValueModal()" class="py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/30 active:scale-95 transition flex items-center justify-center gap-0.5">
-              <span>+ Value</span>
-            </button>
-          </div>
-
-          <!-- Direct Inline Auto-Add Value Input Strip -->
-          <form onsubmit="handleInlineValueAdd(event)" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <input
-              id="inline-add-input"
-              type="number"
-              step="any"
-              inputmode="numeric"
-              placeholder="Enter value to add (e.g. 25 or -5)..."
-              class="flex-1 min-w-0 bg-transparent px-3 py-1.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold tracking-wide active:scale-95 transition shrink-0"
-            >
-              Add Now
             </button>
           </form>
         </div>
@@ -1991,7 +1902,7 @@
           }).catch(() => {
             // Fallback to inline worker if origin doesn't serve sw.js directly
             const swCode = `
-              const CACHE_NAME = 'tasbeeh-tally-v2';
+              const CACHE_NAME = 'tasbeeh-tally-v3';
               self.addEventListener('install', (e) => { self.skipWaiting(); });
               self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
               self.addEventListener('fetch', (e) => {
@@ -2095,6 +2006,7 @@
 
       let lastTapTimestamp = 0;
       let padIsPressed = false;
+      let pointerHandled = false;
 
       function executeCounterTap(e) {
         const now = Date.now();
@@ -2139,6 +2051,8 @@
         // Pointerdown gives instant <4ms feedback on modern Android and iOS
         targetElement.addEventListener('pointerdown', (e) => {
           if (e.target.closest('button') && e.target.closest('button') !== pad) return;
+          pointerHandled = true;
+          setTimeout(() => { pointerHandled = false; }, 350);
           pressPadVisual();
           executeCounterTap(e);
         });
@@ -2150,6 +2064,7 @@
         // Fallback for click (mouse, desktop or browsers without PointerEvent)
         targetElement.addEventListener('click', (e) => {
           if (e.target.closest('button') && e.target.closest('button') !== pad) return;
+          if (pointerHandled) return;
           executeCounterTap(e);
           releasePadVisual();
         });
