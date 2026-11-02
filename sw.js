@@ -1,7 +1,7 @@
 // Tasbeeh & Daily Tally Counter Service Worker
-// Version 1.0.0 - Full Offline PWA Support
+// Version 2.0.0 - Network-First for HTML, Cache-First for Assets, 100% Offline Support
 
-const CACHE_NAME = 'tasbeeh-tally-v1';
+const CACHE_NAME = 'tasbeeh-tally-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -13,24 +13,26 @@ const STATIC_ASSETS = [
   './icons/icon-maskable.svg'
 ];
 
-// Install: Cache critical static assets
+// Install: Cache critical static assets and skip waiting
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('Failed to pre-cache some assets during install:', err);
+        console.warn('[SW] Pre-cache warning:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// Activate: Clean up old cache versions and claim clients
+// Activate: Immediately purge old cache versions and claim all open clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
+            console.log('[SW] Deleting stale cache:', name);
             return caches.delete(name);
           }
         })
@@ -39,50 +41,59 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Stale-While-Revalidate / Cache-First strategy with network fallback
+// Fetch Strategy:
+// 1. HTML / Document: Network First, fallback to cache (guarantees latest app version when online)
+// 2. Static Assets: Cache First, stale-while-revalidate fallback
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
+  const req = event.request;
+  const isHtml = req.mode === 'navigate' ||
+                (req.headers.get('accept') && req.headers.get('accept').includes('text/html'));
 
-  // For same-origin and CDN assets (Tailwind, Google Fonts)
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch background update for cache freshness
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseClone);
-              });
-            }
-          })
-          .catch(() => {
-            // Offline - silently use cache
-          });
-        return cachedResponse;
-      }
-
-      // Not in cache: fetch from network and store in cache
-      return fetch(event.request)
-        .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'opaque') {
-            return networkResponse;
+  if (isHtml) {
+    // Network-First for HTML
+    event.respondWith(
+      fetch(req)
+        .then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const copy = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
           }
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-          return networkResponse;
+          return networkRes;
         })
         .catch(() => {
-          // If HTML request failed, fall back to index.html
-          if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-            return caches.match('./index.html') || caches.match('./');
+          // Offline fallback
+          return caches.match(req).then((cached) => {
+            return cached || caches.match('./index.html') || caches.match('./');
+          });
+        })
+    );
+    return;
+  }
+
+  // Cache-First for static assets (images, fonts, scripts)
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      if (cached) {
+        // Background revalidation
+        fetch(req).then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const copy = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
           }
-        });
+        }).catch(() => {});
+        return cached;
+      }
+
+      return fetch(req).then((networkRes) => {
+        if (!networkRes || networkRes.status !== 200 || networkRes.type === 'opaque') {
+          return networkRes;
+        }
+        const copy = networkRes.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        return networkRes;
+      }).catch(() => {});
     })
   );
 });

@@ -1987,10 +1987,11 @@
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
           navigator.serviceWorker.register('./sw.js').then((reg) => {
             console.log('Tasbeeh PWA Service Worker registered:', reg.scope);
+            try { reg.update(); } catch (e) {}
           }).catch(() => {
             // Fallback to inline worker if origin doesn't serve sw.js directly
             const swCode = `
-              const CACHE_NAME = 'tasbeeh-tally-cache-v1';
+              const CACHE_NAME = 'tasbeeh-tally-v2';
               self.addEventListener('install', (e) => { self.skipWaiting(); });
               self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
               self.addEventListener('fetch', (e) => {
@@ -2071,54 +2072,93 @@
     // ==========================================
     // INITIALIZE TOUCH LISTENERS & APP STARTUP
     // ==========================================
+    function unlockAudio() {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      } catch (e) {}
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       applyTheme();
       setupPWA();
       renderAll();
 
-      // High-Performance Pointer & Touch Engine for Instant Mobile Response
+      // Modern Multi-Modal Touch, Pointer & Click Engine
       const pad = document.getElementById('giant-tap-pad');
-      if (pad) {
-        pad.style.touchAction = 'none';
+      const tapZone = document.getElementById('tap-zone-container');
 
-        let lastTapTimestamp = 0;
-        let isPressed = false;
+      let lastTapTimestamp = 0;
+      let padIsPressed = false;
 
-        function triggerInstantTap(clientX, clientY) {
-          const now = Date.now();
-          // Debounce accidental double-pointer bounce (<45ms)
-          if (now - lastTapTimestamp < 45) return;
-          lastTapTimestamp = now;
+      function executeCounterTap(e) {
+        const now = Date.now();
+        // Debounce only rapid multi-event duplicates (pointerdown followed by click) within 70ms
+        if (now - lastTapTimestamp < 70) return;
+        lastTapTimestamp = now;
 
-          // Unlock Web Audio immediately on touch gesture
-          if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume().catch(() => {});
+        unlockAudio();
+
+        let clientX = null;
+        let clientY = null;
+        if (e) {
+          if (typeof e.clientX === 'number' && e.clientX > 0) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+          } else if (e.touches && e.touches[0]) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
           }
-
-          spawnRipple(clientX, clientY);
-          const active = getActiveCounter();
-          applyValueToCounter(active.id, active.step, 'Tap');
         }
 
-        // Pointerdown responds in <4ms on touchscreens with zero gesture lag
-        pad.addEventListener('pointerdown', (e) => {
-          e.preventDefault();
-          isPressed = true;
-          pad.classList.add('pressed');
-          triggerInstantTap(e.clientX, e.clientY);
+        spawnRipple(clientX, clientY);
+        const active = getActiveCounter();
+        applyValueToCounter(active.id, active.step, 'Tap');
+      }
+
+      function pressPadVisual() {
+        if (pad) pad.classList.add('pressed');
+        padIsPressed = true;
+      }
+
+      function releasePadVisual() {
+        if (pad && padIsPressed) {
+          pad.classList.remove('pressed');
+          padIsPressed = false;
+        }
+      }
+
+      // Attach to both the tap zone and the pad button
+      const targetElement = tapZone || pad;
+      if (targetElement) {
+        // Pointerdown gives instant <4ms feedback on modern Android and iOS
+        targetElement.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('button') && e.target.closest('button') !== pad) return;
+          pressPadVisual();
+          executeCounterTap(e);
         });
 
-        const releasePadPress = () => {
-          if (isPressed) {
-            isPressed = false;
-            pad.classList.remove('pressed');
-          }
-        };
+        targetElement.addEventListener('pointerup', releasePadVisual);
+        targetElement.addEventListener('pointercancel', releasePadVisual);
+        targetElement.addEventListener('pointerleave', releasePadVisual);
 
-        pad.addEventListener('pointerup', releasePadPress);
-        pad.addEventListener('pointercancel', releasePadPress);
-        pad.addEventListener('pointerleave', releasePadPress);
+        // Fallback for click (mouse, desktop or browsers without PointerEvent)
+        targetElement.addEventListener('click', (e) => {
+          if (e.target.closest('button') && e.target.closest('button') !== pad) return;
+          executeCounterTap(e);
+          releasePadVisual();
+        });
       }
+
+      // Unlock Audio on the first touch anywhere on screen
+      window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+      window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+      window.addEventListener('click', unlockAudio, { once: true, passive: true });
 
       // Keyboard space/up arrow support when testing on desktop
       window.addEventListener('keydown', (e) => {
