@@ -44,18 +44,24 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html, body {
+    html {
       width: 100%;
       max-width: 100vw;
-      overflow-x: hidden !important;
-      position: relative;
+      overflow-x: hidden;
       margin: 0;
       padding: 0;
-      overscroll-behavior-y: contain;
-      overscroll-behavior-x: none;
     }
 
     body {
+      width: 100%;
+      max-width: 100vw;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0;
+      padding: 0;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       user-select: none;
       -webkit-user-select: none;
@@ -135,10 +141,10 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200 overflow-x-hidden">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
 
   <!-- App Container constrained nicely on tablets/desktop while full-bleed on Android mobile -->
-  <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-white dark:bg-slate-950 shadow-2xl shadow-slate-950/30 sm:border-x border-slate-200/70 dark:border-slate-800/70 overflow-x-hidden">
+  <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-white dark:bg-slate-950 shadow-2xl shadow-slate-950/30 sm:border-x border-slate-200/70 dark:border-slate-800/70">
 
     <!-- Top App Header: Smart, Compact & Zero Horizontal Overflow -->
     <header class="pt-safe px-3 sm:px-4 pb-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 w-full max-w-full overflow-hidden">
@@ -202,12 +208,12 @@
     </header>
 
     <!-- Main Dynamic View Area -->
-    <main class="flex-1 flex flex-col pb-24 overflow-x-hidden w-full max-w-full">
+    <main class="flex-1 flex flex-col pb-32 w-full max-w-full">
 
       <!-- ========================================== -->
       <!-- VIEW 1: MAIN COUNTER / TASBEEH SCREEN      -->
       <!-- ========================================== -->
-      <section id="view-counter" class="flex-1 flex flex-col px-3.5 sm:px-4 pt-3 pb-2 justify-between gap-3 w-full max-w-full overflow-x-hidden">
+      <section id="view-counter" class="flex-1 flex flex-col px-3.5 sm:px-4 pt-3 pb-2 justify-between gap-3 w-full max-w-full">
         
         <!-- Quick Counter Switcher Bar (Contained Horizontal Scroll) -->
         <div class="w-full overflow-hidden">
@@ -357,7 +363,7 @@
       <!-- ========================================== -->
       <!-- VIEW 2: MY COUNTERS MANAGEMENT SCREEN      -->
       <!-- ========================================== -->
-      <section id="view-counters" class="hidden flex-1 flex-col px-4 pt-4 pb-4 space-y-4">
+      <section id="view-counters" class="hidden flex-1 flex-col px-4 pt-4 pb-12 space-y-4 w-full">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">My Counters</h2>
@@ -365,7 +371,7 @@
           </div>
           <button
             onclick="openCounterModal(null)"
-            class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition flex items-center gap-1.5"
+            class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition flex items-center gap-1.5 touch-manipulation"
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             <span>New Counter</span>
@@ -393,7 +399,7 @@
       <!-- ========================================== -->
       <!-- VIEW 3: DAILY TALLY & ACTIVITY SCREEN      -->
       <!-- ========================================== -->
-      <section id="view-tally" class="hidden flex-1 flex-col px-4 pt-4 pb-4 space-y-4">
+      <section id="view-tally" class="hidden flex-1 flex-col px-4 pt-4 pb-12 space-y-4 w-full">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Daily Tally Screen</h2>
@@ -411,11 +417,31 @@
             <span id="tally-selected-current" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current: 0</span>
           </div>
 
-          <select
-            id="tally-counter-select"
-            onchange="updateTallySelectedReadout()"
-            class="w-full rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
-          ></select>
+          <div class="flex items-center gap-2">
+            <select
+              id="tally-counter-select"
+              onchange="updateTallySelectedReadout()"
+              class="flex-1 min-w-0 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+            ></select>
+            <button
+              type="button"
+              onclick="editCurrentTallyCounter()"
+              title="Edit Selected Counter"
+              class="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:border-emerald-500 active:scale-95 transition flex items-center gap-1 shrink-0 touch-manipulation"
+            >
+              <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              onclick="openCounterModal(null)"
+              title="Add New Target Counter"
+              class="px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1 shrink-0 touch-manipulation"
+            >
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              <span>+ Add</span>
+            </button>
+          </div>
 
           <form onsubmit="handleTallyScreenSubmit(event)" class="space-y-2.5">
             <div class="flex gap-2">
@@ -603,16 +629,27 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tap Increment Step</label>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Current Count / Total</label>
             <input
-              id="form-counter-step"
+              id="form-counter-count"
               type="number"
-              min="1"
               step="any"
-              value="1"
+              value="0"
               class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tap Increment Step</label>
+          <input
+            id="form-counter-step"
+            type="number"
+            min="1"
+            step="any"
+            value="1"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+          />
         </div>
 
         <!-- Target Quick Presets -->
@@ -739,6 +776,34 @@
         <button onclick="closeModal('modal-settings')" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
+      </div>
+
+      <!-- Target Counters Management & Direct Add in Settings -->
+      <div class="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white">Target Counters</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Add counters &amp; set target goals</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onclick="openCounterModalFromSettings(null)"
+            class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1 shrink-0 touch-manipulation"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>+ Add Target</span>
+          </button>
+        </div>
+
+        <!-- Target Counters List Inside Settings -->
+        <div id="settings-counters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+          <!-- Populated dynamically with each counter's target, name, and edit button -->
+        </div>
       </div>
 
       <!-- Install on Device Card (Hidden automatically if app is already installed!) -->
@@ -1279,6 +1344,7 @@
       const nameInput = document.getElementById('form-counter-name');
       const subInput = document.getElementById('form-counter-subtitle');
       const targetInput = document.getElementById('form-counter-target');
+      const countInput = document.getElementById('form-counter-count');
       const stepInput = document.getElementById('form-counter-step');
       const titleEl = document.getElementById('modal-counter-title');
 
@@ -1290,6 +1356,7 @@
         nameInput.value = existing.name;
         subInput.value = existing.subtitle || '';
         targetInput.value = existing.target || 0;
+        if (countInput) countInput.value = existing.count || 0;
         stepInput.value = existing.step || 1;
         selectedModalColor = existing.color || 'emerald';
       } else {
@@ -1298,12 +1365,57 @@
         nameInput.value = '';
         subInput.value = '';
         targetInput.value = 33;
+        if (countInput) countInput.value = 0;
         stepInput.value = 1;
         selectedModalColor = 'emerald';
       }
 
       renderColorPicker();
       openModal('modal-counter');
+    }
+
+    function editCurrentTallyCounter() {
+      const sel = document.getElementById('tally-counter-select');
+      const counterId = sel ? sel.value : state.activeCounterId;
+      openCounterModal(counterId);
+    }
+
+    function openCounterModalFromSettings(counterId = null) {
+      closeModal('modal-settings');
+      openCounterModal(counterId);
+    }
+
+    function renderSettingsCounters() {
+      const container = document.getElementById('settings-counters-list');
+      if (!container) return;
+
+      container.innerHTML = state.counters.map(c => {
+        const isAct = c.id === state.activeCounterId;
+        const accent = ACCENT_COLORS[c.color] || ACCENT_COLORS.emerald;
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs">
+            <div class="min-w-0 flex-1 pr-2">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${accent.hex}"></span>
+                <span class="font-bold text-slate-900 dark:text-white truncate">${escapeHtml(c.name)}</span>
+                ${isAct ? '<span class="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded">ACTIVE</span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Target: <strong class="text-slate-700 dark:text-slate-300">${c.target > 0 ? formatNum(c.target) : 'Unlimited'}</strong> • Count: <strong class="text-slate-700 dark:text-slate-300">${formatNum(c.count)}</strong>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onclick="openCounterModalFromSettings('${c.id}')"
+                class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:border-emerald-500 text-[11px] active:scale-95 transition touch-manipulation"
+              >
+                Edit
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function setTargetPreset(val) {
@@ -1339,6 +1451,8 @@
       const name = document.getElementById('form-counter-name').value.trim();
       const subtitle = document.getElementById('form-counter-subtitle').value.trim();
       const target = Math.max(0, parseInt(document.getElementById('form-counter-target').value, 10) || 0);
+      const countInput = document.getElementById('form-counter-count');
+      const countVal = countInput ? (parseFloat(countInput.value) || 0) : 0;
       const step = parseFloat(document.getElementById('form-counter-step').value) || 1;
 
       if (!name) return;
@@ -1346,11 +1460,29 @@
       if (id) {
         const counter = state.counters.find(c => c.id === id);
         if (counter) {
+          const oldCount = Number(counter.count) || 0;
           counter.name = name;
           counter.subtitle = subtitle;
           counter.target = target;
           counter.step = step;
           counter.color = selectedModalColor;
+          if (oldCount !== countVal) {
+            const delta = countVal - oldCount;
+            counter.count = countVal;
+            const todayKey = getLocalDateKey();
+            state.dailyTotals[todayKey] = state.dailyTotals[todayKey] || {};
+            state.dailyTotals[todayKey][counter.id] = (state.dailyTotals[todayKey][counter.id] || 0) + delta;
+            state.logs.unshift({
+              id: 'log_' + Date.now(),
+              counterId: counter.id,
+              counterName: counter.name,
+              delta: delta,
+              newTotal: counter.count,
+              note: 'Manual edit',
+              dateKey: todayKey,
+              timestamp: Date.now()
+            });
+          }
         }
         showToast('Counter updated');
       } else {
@@ -1359,12 +1491,27 @@
           id: newId,
           name,
           subtitle,
-          count: 0,
+          count: countVal,
           target,
           step,
           color: selectedModalColor,
           createdAt: Date.now()
         });
+        if (countVal !== 0) {
+          const todayKey = getLocalDateKey();
+          state.dailyTotals[todayKey] = state.dailyTotals[todayKey] || {};
+          state.dailyTotals[todayKey][newId] = countVal;
+          state.logs.unshift({
+            id: 'log_' + Date.now(),
+            counterId: newId,
+            counterName: name,
+            delta: countVal,
+            newTotal: countVal,
+            note: 'Initial count',
+            dateKey: todayKey,
+            timestamp: Date.now()
+          });
+        }
         state.activeCounterId = newId;
         showToast(`Created "${name}"`);
       }
@@ -1416,6 +1563,7 @@
       state.activeTab = tabName;
       saveState();
       renderAll();
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     // Theme & Settings Toggles
@@ -1465,6 +1613,7 @@
     }
 
     function openSettingsModal() {
+      renderSettingsCounters();
       openModal('modal-settings');
     }
 
@@ -1825,6 +1974,7 @@
       renderCounterView();
       renderCountersListView();
       renderTallyView();
+      renderSettingsCounters();
     }
 
     // Safe HTML Escape
@@ -1902,7 +2052,7 @@
           }).catch(() => {
             // Fallback to inline worker if origin doesn't serve sw.js directly
             const swCode = `
-              const CACHE_NAME = 'tasbeeh-tally-v3';
+              const CACHE_NAME = 'tasbeeh-tally-v4';
               self.addEventListener('install', (e) => { self.skipWaiting(); });
               self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
               self.addEventListener('fetch', (e) => {
